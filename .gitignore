@@ -4,7 +4,6 @@
 .flutter-plugins
 .flutter-plugins-dependencies
 build/
-*.apk
 *.aab
 *.ipa
 *.app
@@ -16,5 +15,4 @@ build/
 .DS_Store
 
 # Temporary files from our session
-huematch100.apk
 huematch_apk.txt
