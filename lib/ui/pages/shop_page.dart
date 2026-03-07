@@ -9,20 +9,21 @@ class ShopPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<GameProvider>();
+    final theme = Theme.of(context); // DİNAMİK TEMA BİLGİSİNİ ÇEK
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // Tema rengine göre değişir
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           "MAĞAZA",
           style: TextStyle(
-            color: Colors.black87,
+            color: theme.colorScheme.primary, // Tema rengine göre değişir
             fontSize: 18,
             fontWeight: FontWeight.w900,
             letterSpacing: 2.0,
@@ -91,14 +92,13 @@ class ShopPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
               child: InkWell(
                 onTap: () {
-                  // BURASI DÜZELDİ: context parametresi eklendi
                   AdManager.showRewardedAd(
                     context: context,
                     onRewardEarned: () {
                       provider.addBonusCoins(10);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text("Tebrikler! +10 Altın kazandın.", style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: const Text("Tebrikler! +10 Altın kazandın.", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                           backgroundColor: const Color(0xFF66BB6A),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -113,7 +113,7 @@ class ShopPage extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface, // Dinamik yüzey rengi
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFF673AB7).withOpacity(0.5), width: 2),
                   ),
@@ -150,7 +150,7 @@ class ShopPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
-                        color: Colors.grey.shade800,
+                        color: theme.colorScheme.primary, // Dinamik yazı rengi
                       ),
                     ),
                   ),
@@ -162,9 +162,9 @@ class ShopPage extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       children: [
-                        _buildCoinPackage(context, provider, "Başlangıç", 500, "₺29.99"),
-                        _buildCoinPackage(context, provider, "Profesyonel", 1500, "₺79.99", isPopular: true),
-                        _buildCoinPackage(context, provider, "Tycoon Paketi", 5000, "₺199.99"),
+                        _buildCoinPackage(context, provider, theme, "Başlangıç", 500, "₺29.99"),
+                        _buildCoinPackage(context, provider, theme, "Profesyonel", 1500, "₺79.99", isPopular: true),
+                        _buildCoinPackage(context, provider, theme, "Tycoon Paketi", 5000, "₺199.99"),
                       ],
                     ),
                   ),
@@ -183,7 +183,7 @@ class ShopPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: Colors.grey.shade800,
+                            color: theme.colorScheme.primary, // Dinamik yazı rengi
                           ),
                         ),
                         const Spacer(),
@@ -207,6 +207,7 @@ class ShopPage extends StatelessWidget {
                         _buildShopItem(
                           context: context,
                           provider: provider,
+                          theme: theme,
                           title: "Klasik Beyaz",
                           description: "Standart, temiz ve sade.",
                           themeId: 'classic',
@@ -218,17 +219,20 @@ class ShopPage extends StatelessWidget {
                         _buildShopItem(
                           context: context,
                           provider: provider,
+                          theme: theme,
+                          // DİKKAT: Theme ID'yi main.dart ile uyumlu olması için 'dark_matter' yaptık!
                           title: "Karanlık Madde",
-                          description: "Göz yormayan antrasit gece modu.",
-                          themeId: 'dark',
+                          description: "Göz yormayan derin uzay modu.",
+                          themeId: 'dark_matter', 
                           price: 500,
                           icon: Icons.nightlight_round,
-                          iconColor: const Color(0xFF42A5F5),
+                          iconColor: const Color(0xFF00E5FF),
                         ),
                         const SizedBox(height: 16),
                         _buildShopItem(
                           context: context,
                           provider: provider,
+                          theme: theme,
                           title: "Holografik Neon",
                           description: "Matris esintili karanlık zemin.",
                           themeId: 'neon',
@@ -240,6 +244,7 @@ class ShopPage extends StatelessWidget {
                         _buildShopItem(
                           context: context,
                           provider: provider,
+                          theme: theme,
                           title: "Royal Gold",
                           description: "Mat siyah ve altın yaldız.",
                           themeId: 'gold',
@@ -260,14 +265,14 @@ class ShopPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCoinPackage(BuildContext context, GameProvider provider, String title, int amount, String priceStr, {bool isPopular = false}) {
+  Widget _buildCoinPackage(BuildContext context, GameProvider provider, ThemeData theme, String title, int amount, String priceStr, {bool isPopular = false}) {
     return Container(
       width: 140,
       margin: const EdgeInsets.symmetric(horizontal: 8.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface, // Dinamik renk
         borderRadius: BorderRadius.circular(20),
-        border: isPopular ? Border.all(color: const Color(0xFFFFD54F), width: 2) : null,
+        border: isPopular ? Border.all(color: const Color(0xFFFFD54F), width: 2) : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -297,10 +302,10 @@ class ShopPage extends StatelessWidget {
                   children: [
                     Text(
                       "$amount",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black87,
+                        color: theme.colorScheme.primary, // Dinamik yazı rengi
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -316,15 +321,15 @@ class ShopPage extends StatelessWidget {
                       provider.buyCoinPackage(amount);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Satın alım başarılı! +$amount Altın eklendi.", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          content: Text("Satın alım başarılı! +$amount Altın eklendi.", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                           backgroundColor: const Color(0xFF66BB6A),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.primary, // Dinamik Buton Rengi
+                      foregroundColor: theme.scaffoldBackgroundColor, // Dinamik Buton Yazısı
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: EdgeInsets.zero,
@@ -361,6 +366,7 @@ class ShopPage extends StatelessWidget {
   Widget _buildShopItem({
     required BuildContext context,
     required GameProvider provider,
+    required ThemeData theme,
     required String title,
     required String description,
     required String themeId,
@@ -374,9 +380,9 @@ class ShopPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface, // Dinamik yüzey
         borderRadius: BorderRadius.circular(24),
-        border: isEquipped ? Border.all(color: Colors.black87, width: 2) : null,
+        border: isEquipped ? Border.all(color: theme.colorScheme.primary, width: 2) : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -404,10 +410,10 @@ class ShopPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: Colors.black87,
+                    color: theme.colorScheme.primary, // Dinamik yazı rengi
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -426,21 +432,21 @@ class ShopPage extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          _buildActionButton(context, provider, themeId, price, isOwned, isEquipped),
+          _buildActionButton(context, provider, theme, themeId, price, isOwned, isEquipped),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(BuildContext context, GameProvider provider, String themeId, int price, bool isOwned, bool isEquipped) {
+  Widget _buildActionButton(BuildContext context, GameProvider provider, ThemeData theme, String themeId, int price, bool isOwned, bool isEquipped) {
     if (isEquipped) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black87,
+          color: theme.colorScheme.primary, // Dinamik Renk
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text("Kuşanıldı", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+        child: Text("Kuşanıldı", style: TextStyle(color: theme.scaffoldBackgroundColor, fontWeight: FontWeight.bold, fontSize: 12)),
       );
     }
 
@@ -448,8 +454,8 @@ class ShopPage extends StatelessWidget {
       return OutlinedButton(
         onPressed: () { provider.equipTheme(themeId); }, 
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.black87,
-          side: const BorderSide(color: Colors.black87, width: 2),
+          foregroundColor: theme.colorScheme.primary,
+          side: BorderSide(color: theme.colorScheme.primary, width: 2), // Dinamik Çizgi
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: const Text("Seç", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -461,11 +467,11 @@ class ShopPage extends StatelessWidget {
         bool success = provider.buyTheme(themeId, price);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: const Text("Tema açıldı!", style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFF66BB6A), behavior: SnackBarBehavior.floating),
+            SnackBar(content: const Text("Tema açıldı!", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), backgroundColor: const Color(0xFF66BB6A), behavior: SnackBarBehavior.floating),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: const Text("Yetersiz altın! Yukarıdan satın alabilirsin.", style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFFEF5350), behavior: SnackBarBehavior.floating),
+            SnackBar(content: const Text("Yetersiz altın! Yukarıdan satın alabilirsin.", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), backgroundColor: const Color(0xFFEF5350), behavior: SnackBarBehavior.floating),
           );
         }
       },

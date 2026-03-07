@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../data/providers/game_provider.dart';
 import '../widgets/game_card.dart';
-import '../widgets/pause_dialog.dart'; // Pause menüsü eklendi
-import 'result_page.dart'; // Sonuç ekranı eklendi
+import '../widgets/pause_dialog.dart'; 
+import 'result_page.dart'; 
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -17,7 +17,6 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    // Sayfa ilk yüklendiğinde oyunu sıfırlayıp başlatıyoruz
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GameProvider>().startGame();
     });
@@ -25,13 +24,14 @@ class _GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // YENİ: DİNAMİK TEMA MOTORU
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // TEMA RENGİNE GÖRE DEĞİŞİR
       body: SafeArea(
         child: Consumer<GameProvider>(
           builder: (context, gameProvider, child) {
             
-            // Oyun bitiş kontrolü: Eğer 12 çift de bulunduysa sonuç ekranına geç
             if (gameProvider.isGameOver) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Navigator.of(context).pushReplacement(
@@ -43,7 +43,7 @@ class _GamePageState extends State<GamePage> {
             return Column(
               children: [
                 const SizedBox(height: 16), 
-                _buildTopBar(context, gameProvider),
+                _buildTopBar(context, gameProvider, theme), // Tema objesini yolladık
                 const SizedBox(height: 24), 
                 
                 // Oyun Alanı (Grid)
@@ -64,7 +64,7 @@ class _GamePageState extends State<GamePage> {
   }
 
   // --- Üst Bilgi Çubuğu (Zaman ve Skor) ---
-  Widget _buildTopBar(BuildContext context, GameProvider provider) {
+  Widget _buildTopBar(BuildContext context, GameProvider provider, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
@@ -74,20 +74,17 @@ class _GamePageState extends State<GamePage> {
           InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
-              // 1. Önce oyun süresini durduruyoruz
               provider.pauseGame();
-              
-              // 2. Bulanık arka planlı (Buzlu cam) Pause menüsünü açıyoruz
               showDialog(
                 context: context,
-                barrierDismissible: false, // Dışarı tıklayarak kapanmasını engeller
+                barrierDismissible: false, 
                 builder: (context) => const PauseDialog(),
               );
             },
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.colorScheme.surface, // DİNAMİK YÜZEY
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -97,7 +94,7 @@ class _GamePageState extends State<GamePage> {
                   )
                 ],
               ),
-              child: const Icon(Icons.pause_rounded, color: Colors.black87),
+              child: Icon(Icons.pause_rounded, color: theme.colorScheme.primary), // DİNAMİK İKON
             ),
           ),
 
@@ -105,7 +102,7 @@ class _GamePageState extends State<GamePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface, // DİNAMİK YÜZEY
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -116,33 +113,33 @@ class _GamePageState extends State<GamePage> {
               ],
             ),
             child: Text(
-              '${provider.cards.where((c) => c.isMatched).length ~/ 2} / 12',
-              style: const TextStyle(
+              '${provider.cards.where((c) => c.isMatched).length ~/ 2} / 10',
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.black87,
+                color: theme.colorScheme.primary, // DİNAMİK YAZI
                 letterSpacing: 1.2,
               ),
             ),
           ),
 
-          // Zamanlayıcı (Sağda)
+          // Zamanlayıcı (Sağda - Zıt Renkli Kutu)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.black87, 
+              color: theme.colorScheme.primary, // DİNAMİK ZIT ARKA PLAN
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
-                const Icon(Icons.timer_outlined, color: Colors.white, size: 18),
+                Icon(Icons.timer_outlined, color: theme.scaffoldBackgroundColor, size: 18), // DİNAMİK ZIT İKON
                 const SizedBox(width: 6),
                 Text(
                   '${provider.elapsedSeconds}s',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.scaffoldBackgroundColor, // DİNAMİK ZIT YAZI
                   ),
                 ),
               ],
@@ -153,7 +150,7 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  // --- Kartların Dizildiği Ana Grid (4x6) ---
+  // --- Kartların Dizildiği Ana Grid (Senin orijinal 4 sütunlu yapın) ---
   Widget _buildGrid(GameProvider provider) {
     if (provider.cards.isEmpty) {
       return const Center(child: CircularProgressIndicator());

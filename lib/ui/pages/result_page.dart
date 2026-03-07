@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/providers/game_provider.dart';
-import '../../data/services/ad_manager.dart'; // Reklam yöneticisi eklendi
+import '../../data/services/ad_manager.dart'; 
 import 'game_page.dart';
 import 'menu_page.dart';
+import 'level_map_page.dart'; 
 
 class ResultPage extends StatelessWidget {
   const ResultPage({super.key});
@@ -12,13 +13,15 @@ class ResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gameProvider = context.watch<GameProvider>();
+    final theme = Theme.of(context); // YENİ: DİNAMİK TEMA BİLGİSİ
+    
     final int stars = gameProvider.calculateStars();
     final int levelScore = gameProvider.lastLevelScore;
     final int earnedCoins = gameProvider.lastEarnedCoins;
     final int currentLevel = gameProvider.currentLevel;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), 
+      backgroundColor: theme.scaffoldBackgroundColor, // TEMA RENGİ
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -31,13 +34,13 @@ class ResultPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Colors.grey.shade400,
+                    color: Colors.grey.shade500,
                     letterSpacing: 2.0,
                   ),
                 ),
                 const SizedBox(height: 8),
 
-                _buildHeader(stars),
+                _buildHeader(stars, theme),
                 const SizedBox(height: 32),
 
                 _buildStars(stars),
@@ -46,13 +49,14 @@ class ResultPage extends StatelessWidget {
                 // Puan ve Kazanılan Altın Kartları
                 Row(
                   children: [
-                    Expanded(child: _buildStatCard("BÖLÜM PUANI", "+$levelScore", Colors.black87)),
+                    Expanded(child: _buildStatCard("BÖLÜM PUANI", "+$levelScore", theme.colorScheme.primary, theme)),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildStatCard(
                         "KAZANILAN", 
                         "+$earnedCoins", 
                         const Color(0xFFFFD54F),
+                        theme,
                         icon: Icons.monetization_on_rounded,
                       ),
                     ),
@@ -76,8 +80,8 @@ class ResultPage extends StatelessWidget {
                 if (!gameProvider.isDoubleCoinClaimed && earnedCoins > 0)
                   const SizedBox(height: 24),
 
-                // Aksiyon Butonları (Sıradaki Seviye & Menü)
-                _buildActionButtons(context, gameProvider),
+                // Aksiyon Butonları (Sıradaki Seviye & Harita)
+                _buildActionButtons(context, gameProvider, theme),
               ],
             ),
           ),
@@ -94,7 +98,7 @@ class ResultPage extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFF9C27B0), Color(0xFF673AB7)], // Dikkat çekici mor gradyan
+          colors: [Color(0xFF9C27B0), Color(0xFF673AB7)], 
         ),
         boxShadow: [
           BoxShadow(
@@ -109,16 +113,12 @@ class ResultPage extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Ödüllü reklamı göster, bitince parayı ikiye katla!
-            // DÜZELTME: context parametresi eklendi
             AdManager.showRewardedAd(
               context: context,
               onRewardEarned: () {
                 provider.claimDoubleCoins();
               },
-              onClosed: () {
-                // Reklam kapandı. Eğer yarıda kestiyse ödül verilmeyecek.
-              },
+              onClosed: () {},
             );
           },
           child: Row(
@@ -141,7 +141,7 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(int stars) {
+  Widget _buildHeader(int stars, ThemeData theme) {
     String title = "Harika İş!";
     if (stars == 3) {
       title = "Kusursuz!";
@@ -149,10 +149,10 @@ class ResultPage extends StatelessWidget {
 
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 36,
         fontWeight: FontWeight.w900,
-        color: Colors.black87,
+        color: theme.colorScheme.primary, // DİNAMİK YAZI
       ),
     );
   }
@@ -179,7 +179,7 @@ class ResultPage extends StatelessWidget {
                 child: Icon(
                   isEarned ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: size,
-                  color: isEarned ? const Color(0xFFFFD54F) : Colors.grey.shade300,
+                  color: isEarned ? const Color(0xFFFFD54F) : Colors.grey.shade700,
                   shadows: isEarned 
                     ? [BoxShadow(color: const Color(0xFFFFD54F).withOpacity(0.5), blurRadius: 15)]
                     : null,
@@ -192,11 +192,11 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color valueColor, {IconData? icon}) {
+  Widget _buildStatCard(String title, String value, Color valueColor, ThemeData theme, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface, // DİNAMİK YÜZEY
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -240,7 +240,7 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, GameProvider provider) {
+  Widget _buildActionButtons(BuildContext context, GameProvider provider, ThemeData theme) {
     return Column(
       children: [
         SizedBox(
@@ -248,7 +248,6 @@ class ResultPage extends StatelessWidget {
           height: 64,
           child: ElevatedButton(
             onPressed: () {
-              // --- GEÇİŞ REKLAMI (INTERSTITIAL) KONTROLÜ ---
               if (provider.shouldShowInterstitial) {
                 AdManager.showInterstitialAd(
                   onClosed: () {
@@ -266,8 +265,8 @@ class ResultPage extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.primary, // DİNAMİK BUTON RENGİ
+              foregroundColor: theme.scaffoldBackgroundColor, // DİNAMİK BUTON YAZISI
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -297,15 +296,18 @@ class ResultPage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const MenuPage()),
                 (route) => false, 
               );
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const LevelMapPage()),
+              );
             },
             style: TextButton.styleFrom(
-              foregroundColor: Colors.black54,
+              foregroundColor: theme.colorScheme.primary.withOpacity(0.6), // DİNAMİK SOLUK RENK
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
             child: const Text(
-              "Ana Menüye Dön",
+              "Haritaya Dön",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),

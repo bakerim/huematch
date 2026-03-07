@@ -6,7 +6,7 @@ import 'level_map_page.dart';
 import 'scores_page.dart';
 import 'settings_page.dart';
 import 'shop_page.dart'; 
-import 'daily_spin_page.dart'; // YENİ ÇARK SAYFASI
+import 'daily_spin_page.dart'; 
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -41,9 +41,10 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<GameProvider>();
+    final theme = Theme.of(context); // DİNAMİK TEMA BİLGİSİ EKLENDİ
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), 
+      backgroundColor: theme.scaffoldBackgroundColor, // TEMA RENGİNE GÖRE DEĞİŞİR
       body: SafeArea(
         child: Stack(
           children: [
@@ -54,20 +55,21 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
 
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: SlideTransition(position: _slideAnimation, child: _buildTitleSection()),
+                  child: SlideTransition(position: _slideAnimation, child: _buildTitleSection(theme)),
                 ),
 
                 const Spacer(flex: 2),
 
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: SlideTransition(position: _slideAnimation, child: _buildActionButtons(context, provider)),
+                  child: SlideTransition(position: _slideAnimation, child: _buildActionButtons(context, provider, theme)),
                 ),
 
                 const Spacer(flex: 4), 
               ],
             ),
 
+            // SAĞ ÜST CÜZDAN BİLGİSİ
             Positioned(
               top: 16,
               right: 24,
@@ -76,13 +78,13 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface, // DİNAMİK YÜZEY
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Row(
                     children: [
-                      Text("${provider.totalCoins}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black87)),
+                      Text("${provider.totalCoins}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
                       const SizedBox(width: 6),
                       const Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD54F), size: 20),
                     ],
@@ -96,33 +98,33 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildTitleSection() {
+  Widget _buildTitleSection(ThemeData theme) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLogoShape(Icons.change_history_rounded, const Color(0xFF66BB6A)), 
+            _buildLogoShape(Icons.change_history_rounded, const Color(0xFF66BB6A), theme), 
             const SizedBox(width: 8),
-            _buildLogoShape(Icons.square_rounded, const Color(0xFFFFA726), isElevated: true), 
+            _buildLogoShape(Icons.square_rounded, const Color(0xFFFFA726), theme, isElevated: true), 
             const SizedBox(width: 8),
-            _buildLogoShape(Icons.circle, const Color(0xFF42A5F5)), 
+            _buildLogoShape(Icons.circle, const Color(0xFF42A5F5), theme), 
           ],
         ),
         const SizedBox(height: 24),
-        const Text("HueMatch", style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: 2.0)),
+        Text("HueMatch", style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: theme.colorScheme.primary, letterSpacing: 2.0)), // DİNAMİK YAZI
         const SizedBox(height: 8),
         Text("Odaklan, Eşleştir, Temizle.", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade500, letterSpacing: 1.5)),
       ],
     );
   }
 
-  Widget _buildLogoShape(IconData icon, Color color, {bool isElevated = false}) {
+  Widget _buildLogoShape(IconData icon, Color color, ThemeData theme, {bool isElevated = false}) {
     return Container(
       width: isElevated ? 56 : 48,
       height: isElevated ? 56 : 48,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface, // DİNAMİK YÜZEY
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: isElevated ? 20 : 10, offset: const Offset(0, 8))],
       ),
@@ -130,7 +132,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, GameProvider provider) {
+  Widget _buildActionButtons(BuildContext context, GameProvider provider, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32.0),
       child: Column(
@@ -147,8 +149,8 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                 ));
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary, // DİNAMİK BUTON ARKA PLANI
+                foregroundColor: theme.scaffoldBackgroundColor, // DİNAMİK BUTON YAZISI
                 elevation: 10,
                 shadowColor: Colors.black.withOpacity(0.3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -175,11 +177,11 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ShopPage())),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black87,
+                      backgroundColor: theme.colorScheme.surface, // DİNAMİK YÜZEY
+                      foregroundColor: theme.colorScheme.primary, // DİNAMİK YAZI
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      side: BorderSide(color: Colors.grey.shade300, width: 2),
+                      side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2), width: 2), // DİNAMİK ÇİZGİ
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -206,7 +208,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
                         child: ElevatedButton(
                           onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const DailySpinPage())),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF66BB6A),
+                            backgroundColor: theme.colorScheme.secondary, // DİNAMİK SECONDARY RENGİ (Tema motoruna göre yeşil, pembe veya kırmızı olur)
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -236,9 +238,9 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
           // SKORLAR VE AYARLAR
           Row(
             children: [
-              Expanded(child: _buildSecondaryButton(Icons.leaderboard_rounded, "Skorlar", () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ScoresPage())))),
+              Expanded(child: _buildSecondaryButton(Icons.leaderboard_rounded, "Skorlar", theme, () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ScoresPage())))),
               const SizedBox(width: 16),
-              Expanded(child: _buildSecondaryButton(Icons.settings_rounded, "Ayarlar", () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage())))),
+              Expanded(child: _buildSecondaryButton(Icons.settings_rounded, "Ayarlar", theme, () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage())))),
             ],
           ),
         ],
@@ -246,23 +248,23 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildSecondaryButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildSecondaryButton(IconData icon, String label, ThemeData theme, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface, // DİNAMİK YÜZEY
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.black87, size: 20),
+            Icon(icon, color: theme.colorScheme.primary, size: 20), // DİNAMİK İKON
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
+            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: theme.colorScheme.primary)), // DİNAMİK YAZI
           ],
         ),
       ),
