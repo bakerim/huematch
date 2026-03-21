@@ -8,20 +8,21 @@ class ScoresPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<GameProvider>();
+    final theme = Theme.of(context); // DİNAMİK TEMA MOTORU
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // TEMA ARKA PLANI
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           "İSTATİSTİKLER",
           style: TextStyle(
-            color: Colors.black87,
+            color: theme.colorScheme.primary, // DİNAMİK YAZI
             fontSize: 18,
             fontWeight: FontWeight.w900,
             letterSpacing: 2.0,
@@ -35,12 +36,12 @@ class ScoresPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Kişisel Rekorların",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: Colors.black87,
+                  color: theme.colorScheme.primary, // DİNAMİK YAZI
                 ),
               ),
               const SizedBox(height: 8),
@@ -49,13 +50,13 @@ class ScoresPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade500,
+                  color: theme.colorScheme.primary.withOpacity(0.5), // DİNAMİK SOLUK YAZI
                 ),
               ),
               const SizedBox(height: 40),
 
-              // En Yüksek Puan Kartı
               _buildStatCard(
+                theme: theme,
                 icon: Icons.emoji_events_rounded,
                 iconColor: const Color(0xFFFFD54F),
                 title: "En Yüksek Toplam Puan",
@@ -63,8 +64,8 @@ class ScoresPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // En Yüksek Seviye Kartı
               _buildStatCard(
+                theme: theme,
                 icon: Icons.military_tech_rounded,
                 iconColor: const Color(0xFF42A5F5),
                 title: "Ulaşılan En Yüksek Seviye",
@@ -72,8 +73,8 @@ class ScoresPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Toplam Altın Kartı (Mağaza için)
               _buildStatCard(
+                theme: theme,
                 icon: Icons.monetization_on_rounded,
                 iconColor: const Color(0xFF66BB6A),
                 title: "Mevcut Altın (Cüzdan)",
@@ -87,6 +88,7 @@ class ScoresPage extends StatelessWidget {
   }
 
   Widget _buildStatCard({
+    required ThemeData theme,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -96,14 +98,10 @@ class ScoresPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface, // DİNAMİK KART RENGİ
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))
         ],
       ),
       child: Row(
@@ -126,16 +124,16 @@ class ScoresPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey.shade500,
+                    color: theme.colorScheme.primary.withOpacity(0.5),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: Colors.black87,
+                    color: theme.colorScheme.primary, // DİNAMİK DEĞER RENGİ
                   ),
                 ),
               ],

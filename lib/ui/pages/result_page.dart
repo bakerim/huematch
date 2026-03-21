@@ -1,87 +1,257 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../data/providers/game_provider.dart';
-import '../../data/services/ad_manager.dart'; 
+import '../../data/services/ad_manager.dart';
 import 'game_page.dart';
 import 'menu_page.dart';
-import 'level_map_page.dart'; 
+import 'level_map_page.dart';
 
-class ResultPage extends StatelessWidget {
+class ResultPage extends StatefulWidget {
   const ResultPage({super.key});
+
+  @override
+  State<ResultPage> createState() => _ResultPageState();
+}
+
+class _ResultPageState extends State<ResultPage>
+    with SingleTickerProviderStateMixin {
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = AdManager.createBannerAd(
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) setState(() => _isBannerLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Sonuç Sayfası Banner Hatası: $error');
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final gameProvider = context.watch<GameProvider>();
-    final theme = Theme.of(context); // YENİ: DİNAMİK TEMA BİLGİSİ
-    
-    final int stars = gameProvider.calculateStars();
-    final int levelScore = gameProvider.lastLevelScore;
-    final int earnedCoins = gameProvider.lastEarnedCoins;
+    final theme = Theme.of(context);
+
+    bool isFailed = gameProvider.isTimeUp;
+
+    final int stars = isFailed ? 0 : gameProvider.calculateStars();
+    final int levelScore = isFailed ? 0 : gameProvider.lastLevelScore;
+    final int earnedCoins = isFailed ? 0 : gameProvider.lastEarnedCoins;
     final int currentLevel = gameProvider.currentLevel;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor, // TEMA RENGİ
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "LEVEL $currentLevel TAMAMLANDI",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.grey.shade500,
-                    letterSpacing: 2.0,
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 20.0,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isFailed
+                            ? "SÜRE DOLDU"
+                            : "LEVEL $currentLevel TAMAMLANDI",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isFailed
+                              ? Colors.redAccent
+                              : Colors.grey.shade500,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      _buildHeader(stars, isFailed, theme),
+                      const SizedBox(height: 32),
+
+                      _buildStars(stars, isFailed),
+                      const SizedBox(height: 32),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              "BÖLÜM PUANI",
+                              "+$levelScore",
+                              theme.colorScheme.primary,
+                              theme,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              "KAZANILAN",
+                              "+$earnedCoins",
+                              const Color(0xFFFFD54F),
+                              theme,
+                              icon: Icons.monetization_on_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      if (isFailed)
+                        _buildRetryButton(context, gameProvider, theme)
+                      else ...[
+                        if (!gameProvider.isDoubleCoinClaimed &&
+                            earnedCoins > 0)
+                          _buildDoubleCoinsButton(
+                            context,
+                            gameProvider,
+                            earnedCoins,
+                            theme,
+                          ),
+
+                        if (gameProvider.isDoubleCoinClaimed)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 24.0),
+                            child: Text(
+                              "Altınlar İkiye Katlandı! 🎉",
+                              style: TextStyle(
+                                color: Color(0xFF66BB6A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+
+                        if (!gameProvider.isDoubleCoinClaimed &&
+                            earnedCoins > 0)
+                          const SizedBox(height: 24),
+
+                        _buildActionButtons(context, gameProvider, theme),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
+              ),
+            ),
 
-                _buildHeader(stars, theme),
-                const SizedBox(height: 32),
+            if (_isBannerLoaded && _bannerAd != null)
+              Container(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                margin: const EdgeInsets.only(bottom: 8),
+                child: AdWidget(ad: _bannerAd!),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                _buildStars(stars),
-                const SizedBox(height: 32),
-
-                // Puan ve Kazanılan Altın Kartları
-                Row(
+  Widget _buildDoubleCoinsButton(
+    BuildContext context,
+    GameProvider provider,
+    int amount,
+    ThemeData theme,
+  ) {
+    return ScaleTransition(
+      scale: _pulseAnimation,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        width: double.infinity,
+        height: 64,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              AdManager.showRewardedAd(
+                context: context,
+                onRewardEarned: () {
+                  provider.claimDoubleCoins();
+                },
+                onClosed: () {},
+              );
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Colors.black87,
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildStatCard("BÖLÜM PUANI", "+$levelScore", theme.colorScheme.primary, theme)),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        "KAZANILAN", 
-                        "+$earnedCoins", 
-                        const Color(0xFFFFD54F),
-                        theme,
-                        icon: Icons.monetization_on_rounded,
+                    const Text(
+                      "ALTINLARI İKİYE KATLA!",
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      "Bedava +$amount Altın Al",
+                      style: TextStyle(
+                        color: Colors.black87.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                // --- 2X ALTIN (REWARDED AD) BUTONU ---
-                if (!gameProvider.isDoubleCoinClaimed && earnedCoins > 0)
-                  _buildDoubleCoinsButton(context, gameProvider, earnedCoins),
-
-                if (gameProvider.isDoubleCoinClaimed)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 24.0),
-                    child: Text(
-                      "Altınlar İkiye Katlandı! 🎉",
-                      style: TextStyle(color: Color(0xFF66BB6A), fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ),
-
-                if (!gameProvider.isDoubleCoinClaimed && earnedCoins > 0)
-                  const SizedBox(height: 24),
-
-                // Aksiyon Butonları (Sıradaki Seviye & Harita)
-                _buildActionButtons(context, gameProvider, theme),
               ],
             ),
           ),
@@ -90,86 +260,97 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDoubleCoinsButton(BuildContext context, GameProvider provider, int amount) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      width: double.infinity,
-      height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9C27B0), Color(0xFF673AB7)], 
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF673AB7).withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            AdManager.showRewardedAd(
-              context: context,
-              onRewardEarned: () {
-                provider.claimDoubleCoins();
-              },
-              onClosed: () {},
-            );
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                "Reklam İzle 2X Kazan (+$amount)",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+  Widget _buildRetryButton(
+    BuildContext context,
+    GameProvider provider,
+    ThemeData theme,
+  ) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 64,
+          child: ElevatedButton(
+            onPressed: () {
+              provider.restartGame();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const GamePage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.scaffoldBackgroundColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-            ],
+            ),
+            child: const Text(
+              "TEKRAR DENE",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 64,
+          child: TextButton(
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const MenuPage()),
+                (route) => false,
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const LevelMapPage()),
+              );
+            },
+            child: Text(
+              "Haritaya Dön",
+              style: TextStyle(
+                color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHeader(int stars, ThemeData theme) {
+  Widget _buildHeader(int stars, bool isFailed, ThemeData theme) {
     String title = "Harika İş!";
-    if (stars == 3) {
+    if (isFailed) {
+      title = "Başarısız!";
+    } else if (stars == 3) {
       title = "Kusursuz!";
-    } else if (stars == 0) title = "Biraz Yavaş...";
+    } else if (stars == 0) {
+      title = "Zar Zor Bitti...";
+    }
 
     return Text(
       title,
       style: TextStyle(
         fontSize: 36,
         fontWeight: FontWeight.w900,
-        color: theme.colorScheme.primary, // DİNAMİK YAZI
+        color: isFailed ? Colors.redAccent : theme.colorScheme.primary,
       ),
     );
   }
 
-  Widget _buildStars(int earnedStars) {
+  Widget _buildStars(int earnedStars, bool isFailed) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (index) {
-        bool isEarned = index < earnedStars;
+        bool isEarned = index < earnedStars && !isFailed;
         double size = index == 1 ? 80.0 : 60.0;
-        EdgeInsets margin = index == 1 
-            ? const EdgeInsets.only(bottom: 20, left: 10, right: 10) 
+        EdgeInsets margin = index == 1
+            ? const EdgeInsets.only(bottom: 20, left: 10, right: 10)
             : const EdgeInsets.symmetric(horizontal: 5);
 
         return TweenAnimationBuilder(
           tween: Tween<double>(begin: 0, end: 1),
-          duration: Duration(milliseconds: 400 + (index * 200)), 
+          duration: Duration(milliseconds: 400 + (index * 200)),
           curve: Curves.elasticOut,
           builder: (context, double value, child) {
             return Transform.scale(
@@ -179,10 +360,19 @@ class ResultPage extends StatelessWidget {
                 child: Icon(
                   isEarned ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: size,
-                  color: isEarned ? const Color(0xFFFFD54F) : Colors.grey.shade700,
-                  shadows: isEarned 
-                    ? [BoxShadow(color: const Color(0xFFFFD54F).withOpacity(0.5), blurRadius: 15)]
-                    : null,
+                  color: isEarned
+                      ? const Color(0xFFFFD54F)
+                      : Colors.grey.withValues(alpha: 0.3),
+                  shadows: isEarned
+                      ? [
+                          BoxShadow(
+                            color: const Color(
+                              0xFFFFD54F,
+                            ).withValues(alpha: 0.5),
+                            blurRadius: 15,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             );
@@ -192,18 +382,24 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color valueColor, ThemeData theme, {IconData? icon}) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    Color valueColor,
+    ThemeData theme, {
+    IconData? icon,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface, // DİNAMİK YÜZEY
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -240,7 +436,11 @@ class ResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, GameProvider provider, ThemeData theme) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    GameProvider provider,
+    ThemeData theme,
+  ) {
     return Column(
       children: [
         SizedBox(
@@ -248,26 +448,19 @@ class ResultPage extends StatelessWidget {
           height: 64,
           child: ElevatedButton(
             onPressed: () {
-              if (provider.shouldShowInterstitial) {
-                AdManager.showInterstitialAd(
-                  onClosed: () {
-                    provider.nextLevel(); 
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const GamePage()),
-                    );
-                  }
-                );
-              } else {
-                provider.nextLevel(); 
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const GamePage()),
-                );
-              }
+              provider.nextLevel();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const GamePage()),
+              );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary, // DİNAMİK BUTON RENGİ
-              foregroundColor: theme.scaffoldBackgroundColor, // DİNAMİK BUTON YAZISI
+              backgroundColor: theme.colorScheme.surface,
+              foregroundColor: theme.colorScheme.primary,
               elevation: 0,
+              side: BorderSide(
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                width: 2,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -277,7 +470,7 @@ class ResultPage extends StatelessWidget {
               children: [
                 Text(
                   "Sıradaki Seviye",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(width: 12),
                 Icon(Icons.arrow_forward_rounded, size: 28),
@@ -286,7 +479,7 @@ class ResultPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         SizedBox(
           width: double.infinity,
           height: 64,
@@ -294,21 +487,21 @@ class ResultPage extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const MenuPage()),
-                (route) => false, 
+                (route) => false,
               );
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const LevelMapPage()),
               );
             },
             style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.primary.withOpacity(0.6), // DİNAMİK SOLUK RENK
+              foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
             child: const Text(
               "Haritaya Dön",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ),
