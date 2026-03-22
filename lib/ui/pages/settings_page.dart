@@ -30,7 +30,10 @@ class SettingsPage extends StatelessWidget {
             Icons.arrow_back_ios_new_rounded,
             color: theme.colorScheme.primary,
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            provider.playButtonClickSound(); // Çıkışta ses çal
+            Navigator.of(context).pop();
+          },
         ),
         title: Text(
           "AYARLAR",
@@ -55,7 +58,6 @@ class SettingsPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  // YENİ STANDART: withOpacity yerine withValues(alpha: ...)
                   color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   letterSpacing: 1.5,
                 ),
@@ -81,20 +83,44 @@ class SettingsPage extends StatelessWidget {
                       iconColor: const Color(0xFFFFA726),
                       title: "Titreşim (Haptic)",
                       value: provider.isVibrationEnabled,
-                      onChanged: (val) => provider.toggleVibration(),
+                      onChanged: (val) {
+                        provider.playButtonClickSound();
+                        provider.toggleVibration();
+                      },
                     ),
                     Divider(
                       height: 1,
                       color: theme.colorScheme.primary.withValues(alpha: 0.05),
                       indent: 60,
                     ),
+                    // 🔥 YENİ: Ses Efektleri (SFX) Butonu
+                    _buildSwitchTile(
+                      theme: theme,
+                      icon: Icons.volume_up_rounded,
+                      iconColor: const Color(0xFF42A5F5),
+                      title: "Ses Efektleri (SFX)",
+                      value: provider.isSfxEnabled,
+                      onChanged: (val) {
+                        provider.playButtonClickSound();
+                        provider.toggleSfx();
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                      indent: 60,
+                    ),
+                    // 🔥 YENİ: Arka Plan Müziği (BGM) Butonu
                     _buildSwitchTile(
                       theme: theme,
                       icon: Icons.music_note_rounded,
-                      iconColor: const Color(0xFF42A5F5),
-                      title: "Ses Efektleri (SFX)",
-                      value: provider.isSoundEnabled,
-                      onChanged: (val) => provider.toggleSound(),
+                      iconColor: const Color(0xFFEC407A), // Pembe hoş bir renk
+                      title: "Arka Plan Müziği",
+                      value: provider.isMusicEnabled,
+                      onChanged: (val) {
+                        provider.playButtonClickSound();
+                        provider.toggleMusic();
+                      },
                     ),
                   ],
                 ),
@@ -132,6 +158,7 @@ class SettingsPage extends StatelessWidget {
                       iconColor: const Color(0xFFFFD54F),
                       title: "Bizi Değerlendir",
                       onTap: () {
+                        provider.playButtonClickSound();
                         // TODO: Uygulama mağazaya yüklenince buraya Store linki eklenecek
                       },
                     ),
@@ -145,7 +172,10 @@ class SettingsPage extends StatelessWidget {
                       icon: Icons.privacy_tip_rounded,
                       iconColor: const Color(0xFF66BB6A),
                       title: "Gizlilik Politikası",
-                      onTap: _launchPrivacyPolicy,
+                      onTap: () {
+                        provider.playButtonClickSound();
+                        _launchPrivacyPolicy();
+                      },
                     ),
                   ],
                 ),
