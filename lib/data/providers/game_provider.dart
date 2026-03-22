@@ -24,6 +24,11 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _delayedGameOverTimer;
   Timer? _memorizeTimer;
 
+  // 🔥 YENİ: NİNJA MODU ZAMANLAYICISI
+  Timer? _mismatchTimer;
+  int? _mismatchFirst;
+  int? _mismatchSecond;
+
   int _timeLeft = 0;
   int get timeLeft => _timeLeft;
 
@@ -101,7 +106,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<int> get nearMissIndices => _nearMissIndices;
 
   // ==========================================================
-  // 🔥 SES MİMARİSİ
+  // 🔥 ZIRHLI SES VE TİTREŞİM MİMARİSİ
   // ==========================================================
   final AudioPlayer _bgmPlayer = AudioPlayer();
   final List<AudioPlayer> _sfxPool = List.generate(
@@ -109,6 +114,8 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     (_) => AudioPlayer()..setReleaseMode(ReleaseMode.stop),
   );
   int _sfxIndex = 0;
+  int _lastSfxTime = 0;
+  int _lastVibrateTime = 0;
 
   Future<void> _initGlobalAudio() async {
     final audioContext = AudioContext(
@@ -129,9 +136,31 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void _playSfx(String path) {
     if (!_isSfxEnabled) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastSfxTime < 50) return;
+    _lastSfxTime = now;
+
     final player = _sfxPool[_sfxIndex];
     player.play(AssetSource('sounds/$path'), mode: PlayerMode.lowLatency);
     _sfxIndex = (_sfxIndex + 1) % _sfxPool.length;
+  }
+
+  void _safeVibrate(int type) {
+    if (!_isVibrationEnabled) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastVibrateTime < 100) return;
+    _lastVibrateTime = now;
+
+    if (type == 1) {
+      HapticFeedback.lightImpact();
+    } else if (type == 2)
+      HapticFeedback.mediumImpact();
+    else if (type == 3)
+      HapticFeedback.heavyImpact();
+    else
+      HapticFeedback.vibrate();
   }
 
   void playButtonClickSound() {
@@ -180,7 +209,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     return 800;
   }
 
-  // 🔥 DEĞİŞİM 1: ARTIK HER SEVİYE KESİNLİKLE 60 SANİYE!
   int get totalLevelTime {
     return 60;
   }
@@ -243,7 +271,10 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     _gameTimer?.cancel();
     _delayedGameOverTimer?.cancel();
     _memorizeTimer?.cancel();
+    _mismatchTimer?.cancel();
 
+    _mismatchFirst = null;
+    _mismatchSecond = null;
     _cards.clear();
     _currentFlippedCards.clear();
     _hintedCardIndices.clear();
@@ -277,7 +308,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
         _timeLeft--;
 
         if (_timeLeft <= 10 && _timeLeft > 0) {
-          if (_isVibrationEnabled) HapticFeedback.selectionClick();
+          _safeVibrate(1);
           _playSfx('time_left.mp3');
         }
 
@@ -285,6 +316,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         _gameTimer?.cancel();
         _isLocked = true;
+        _closeMismatchCards(); // Süre bitince açık kalan varsa kapat
 
         int firstMiss = _cards.indexWhere((c) => !c.isMatched);
         if (firstMiss != -1) {
@@ -299,7 +331,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
             _cards[firstMiss].isFlipped = true;
             _cards[secondMiss].isFlipped = true;
             _nearMissIndices = [firstMiss, secondMiss];
-            if (_isVibrationEnabled) HapticFeedback.heavyImpact();
+            _safeVibrate(3);
           }
         }
         notifyListeners();
@@ -312,7 +344,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
-  // 🔥 DEĞİŞİM 2: JOKER (ANINDA EŞLEŞTİREN İPUCU) SİSTEMİ!
   void useHint(VoidCallback onShowAd) {
     if (_isLocked || _isGameOver || _isTimeUp) return;
 
@@ -320,10 +351,11 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       _hintCount--;
       _saveData();
 
-      // Açılmamış ilk kartı bul
+      // İpucu alırken açıkta kalan yanlış kartlar varsa anında kapat
+      _closeMismatchCards();
+
       int firstIndex = _cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
       if (firstIndex != -1) {
-        // Eşini bul
         int secondIndex = _cards.indexWhere(
           (c) =>
               !c.isMatched &&
@@ -333,10 +365,9 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
         );
 
         if (secondIndex != -1) {
-          if (_isVibrationEnabled) HapticFeedback.mediumImpact();
-          _playSfx('correct_match.mp3'); // Anında eşleşme sesi!
+          _safeVibrate(2);
+          _playSfx('correct_match.mp3');
 
-          // Beklemek ve tıklamak yok! Anında aç, yeşil yap ve eşleştir!
           _cards[firstIndex].isFlipped = true;
           _cards[secondIndex].isFlipped = true;
           _cards[firstIndex].isMatched = true;
@@ -345,7 +376,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
 
           notifyListeners();
 
-          // Eğer son kartlarsa oyunu bitir
           if (_matchesFound == 10) {
             _gameOver(failed: false);
           }
@@ -560,6 +590,16 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     return result;
   }
 
+  // 🔥 YENİ: Bekleyen hatalı kartları anında kapatan Ninja Metodu!
+  void _closeMismatchCards() {
+    if (_mismatchFirst != null && _mismatchSecond != null) {
+      _cards[_mismatchFirst!].isFlipped = false;
+      _cards[_mismatchSecond!].isFlipped = false;
+      _mismatchFirst = null;
+      _mismatchSecond = null;
+    }
+  }
+
   void onCardTapped(int index) {
     if (_isLocked ||
         _isGameOver ||
@@ -569,7 +609,14 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    if (_isVibrationEnabled) HapticFeedback.lightImpact();
+    // 🔥 NİNJA MODU AKTİF: Eğer ekranda kapanmayı bekleyen hatalı kart varsa ve 3.ye bastıysan,
+    // beklemeyi iptal et ve o eski kartları anında yüzlerine çarp (kapat)!
+    if (_mismatchTimer != null && _mismatchTimer!.isActive) {
+      _mismatchTimer!.cancel();
+      _closeMismatchCards();
+    }
+
+    _safeVibrate(1);
     _playSfx('card_flip.mp3');
 
     _cards[index].isFlipped = true;
@@ -584,13 +631,13 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _checkForMatch(int firstIndex, int secondIndex) async {
+  void _checkForMatch(int firstIndex, int secondIndex) {
     bool isMatch =
         (_cards[firstIndex].color == _cards[secondIndex].color) &&
         (_cards[firstIndex].icon == _cards[secondIndex].icon);
 
     if (isMatch) {
-      if (_isVibrationEnabled) HapticFeedback.mediumImpact();
+      _safeVibrate(2);
       _playSfx('correct_match.mp3');
 
       _cards[firstIndex].isMatched = true;
@@ -602,19 +649,26 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
       notifyListeners();
     } else {
-      if (_isVibrationEnabled) HapticFeedback.vibrate();
+      _safeVibrate(4);
       _playSfx('incorrect_match.mp3');
 
-      await Future.delayed(const Duration(milliseconds: 1000));
-      _cards[firstIndex].isFlipped = false;
-      _cards[secondIndex].isFlipped = false;
-      notifyListeners();
+      // 🔥 KİLİT YOK! Sadece kartları hafızaya alıp 1 saniyelik geri sayım başlatıyoruz.
+      _mismatchFirst = firstIndex;
+      _mismatchSecond = secondIndex;
+
+      _mismatchTimer = Timer(const Duration(milliseconds: 1000), () {
+        _closeMismatchCards();
+        notifyListeners();
+      });
     }
   }
 
   void _gameOver({required bool failed}) {
     _isGameOver = true;
     _gameTimer?.cancel();
+    _mismatchTimer?.cancel(); // Temizlik
+    _closeMismatchCards(); // Temizlik
+
     _gamesPlayed++;
     _isDoubleCoinClaimed = false;
 
@@ -783,6 +837,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void pauseGame() {
     _gameTimer?.cancel();
+    _mismatchTimer?.cancel();
     _isManuallyPaused = true;
     _bgmPlayer.pause();
     notifyListeners();
@@ -793,6 +848,8 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isManuallyPaused = false;
       _startCountdown();
       if (_isMusicEnabled) _bgmPlayer.resume();
+      // Hatalı kartlar varsa geri dönüldüğünde hemen kapatılsın ki arayüz temiz kalsın
+      _closeMismatchCards();
       notifyListeners();
     }
   }
@@ -803,6 +860,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     _gameTimer?.cancel();
     _delayedGameOverTimer?.cancel();
     _memorizeTimer?.cancel();
+    _mismatchTimer?.cancel();
 
     for (var player in _sfxPool) {
       player.dispose();
