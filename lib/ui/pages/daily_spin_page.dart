@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Haptic için
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
@@ -14,26 +14,24 @@ class DailySpinPage extends StatefulWidget {
 }
 
 class _DailySpinPageState extends State<DailySpinPage> {
-  int _gameState =
-      0; // 0: Bekliyor, 1: Göster, 2: Toplandı (Karışıyor), 3: Seçim Bekliyor, 4: Bitti
+  int _gameState = 0;
   int? _selectedIndex;
 
-  final List<int> _originalRewards = [0, 0, 0, 2, 2, 2, 5, 5, 5, 10, 10, 15];
+  // 🔥 BUG FIX: Kart sayısı 12'den 9'a düşürüldü ki ekrana sığsın!
+  final List<int> _originalRewards = [0, 0, 2, 2, 5, 5, 10, 10, 15];
   late List<int> _currentRewards;
-  late List<int>
-  _shuffledPositions; // Kartların ekrandaki konumlarını takip eder
+  late List<int> _shuffledPositions;
 
-  bool _isGathered = false; // Kartlar merkezde mi toplandı?
-  bool _showFronts = true; // Yüzleri mi görüyoruz arkalarını mı?
+  bool _isGathered = false;
+  bool _showFronts = true;
 
   @override
   void initState() {
     super.initState();
     _currentRewards = List.from(_originalRewards);
-    _shuffledPositions = List.generate(12, (index) => index);
+    _shuffledPositions = List.generate(9, (index) => index);
   }
 
-  // --- AAA KALİTESİNDE KARIŞTIRMA SİSTEMİ ---
   void _startRound(GameProvider provider, bool isFree) {
     if (_gameState != 0 && _gameState != 4) return;
 
@@ -43,17 +41,15 @@ class _DailySpinPageState extends State<DailySpinPage> {
       _gameState = 1;
       _selectedIndex = null;
       _currentRewards = List.from(_originalRewards);
-      _shuffledPositions = List.generate(12, (index) => index);
+      _shuffledPositions = List.generate(9, (index) => index);
       _showFronts = true;
     });
 
-    // 1. Oyuncuya ödülleri göster ve sonra yüzlerini kapat
     Timer(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
       if (provider.isVibrationEnabled) HapticFeedback.selectionClick();
       setState(() => _showFronts = false);
 
-      // 2. Kartları Merkeze Topla (Gather)
       Timer(const Duration(milliseconds: 600), () {
         if (!mounted) return;
         if (provider.isVibrationEnabled) HapticFeedback.heavyImpact();
@@ -62,17 +58,14 @@ class _DailySpinPageState extends State<DailySpinPage> {
           _isGathered = true;
         });
 
-        // 3. Merkezde Karıştır (Arka planda indexleri değiştir)
         Timer(const Duration(milliseconds: 800), () {
           if (!mounted) return;
-          if (provider.isVibrationEnabled)
-            HapticFeedback.vibrate(); // Karışma hissi
+          if (provider.isVibrationEnabled) HapticFeedback.vibrate();
           setState(() {
             _currentRewards.shuffle(Random());
             _shuffledPositions.shuffle(Random());
           });
 
-          // 4. Kartları Yeni Yerlerine Dağıt (Deal)
           Timer(const Duration(milliseconds: 400), () {
             if (!mounted) return;
             if (provider.isVibrationEnabled) HapticFeedback.mediumImpact();
@@ -104,7 +97,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
     final wonAmount = _currentRewards[index];
     provider.applySpinReward(wonAmount, isFree);
 
-    // Seçimden sonra tatlı bir gerilim payı
     Timer(const Duration(milliseconds: 1200), () {
       if (mounted) _showResultDialog(wonAmount, theme, provider);
     });
@@ -131,8 +123,8 @@ class _DailySpinPageState extends State<DailySpinPage> {
               boxShadow: [
                 BoxShadow(
                   color: isEmpty
-                      ? Colors.red.withOpacity(0.1)
-                      : const Color(0xFFFFD54F).withOpacity(0.2),
+                      ? Colors.red.withValues(alpha: 0.1)
+                      : const Color(0xFFFFD54F).withValues(alpha: 0.2),
                   blurRadius: 40,
                   offset: const Offset(0, 20),
                 ),
@@ -145,15 +137,15 @@ class _DailySpinPageState extends State<DailySpinPage> {
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: isEmpty
-                        ? theme.colorScheme.primary.withOpacity(0.05)
-                        : const Color(0xFFFFD54F).withOpacity(0.1),
+                        ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                        : const Color(0xFFFFD54F).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isEmpty ? Icons.close_rounded : Icons.diamond_rounded,
                     size: 64,
                     color: isEmpty
-                        ? theme.colorScheme.primary.withOpacity(0.3)
+                        ? theme.colorScheme.primary.withValues(alpha: 0.3)
                         : const Color(0xFFFFD54F),
                   ),
                 ),
@@ -176,7 +168,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary.withOpacity(0.5),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -245,7 +237,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
           children: [
             const SizedBox(height: 12),
 
-            // Premium Cüzdan
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
@@ -253,7 +244,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -282,7 +273,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
 
             const SizedBox(height: 16),
 
-            // Bilgi Metni
             Text(
               _gameState == 0
                   ? "Şansını denemeye hazır mısın?"
@@ -299,43 +289,57 @@ class _DailySpinPageState extends State<DailySpinPage> {
                 letterSpacing: 1.0,
                 color: _gameState == 3
                     ? theme.colorScheme.secondary
-                    : theme.colorScheme.primary.withOpacity(0.5),
+                    : theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),
 
-            // --- YENİ NESİL "UÇAN KART" MATRİSİ ---
+            // 🔥 BUG FIX: 3x3 Kusursuz Oturan Matris
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    // Kart boyutlarını ve boşlukları dinamik hesapla
                     final double spacing = 12.0;
-                    final double cardWidth =
-                        (constraints.maxWidth - (spacing * 2)) / 3;
-                    final double cardHeight = cardWidth / 0.8;
 
-                    // Merkezin koordinatları (Toplanma noktası)
+                    // Ekran yüksekliğine göre kart boyunu kısıtla ki alta taşmasın
+                    double cardHeight =
+                        (constraints.maxHeight - (spacing * 2)) / 3;
+                    double cardWidth = cardHeight * 0.8; // Kart oranı
+
+                    // Eğer genişlik yetmezse genişliğe göre daralt
+                    if (cardWidth * 3 + spacing * 2 > constraints.maxWidth) {
+                      cardWidth = (constraints.maxWidth - (spacing * 2)) / 3;
+                      cardHeight = cardWidth / 0.8;
+                    }
+
+                    // Merkeze hizalamak için kalan boşluğu hesapla
+                    final double gridTotalWidth =
+                        (cardWidth * 3) + (spacing * 2);
+                    final double gridTotalHeight =
+                        (cardHeight * 3) + (spacing * 2);
+                    final double offsetX =
+                        (constraints.maxWidth - gridTotalWidth) / 2;
+                    final double offsetY =
+                        (constraints.maxHeight - gridTotalHeight) / 2;
+
                     final double centerX =
                         (constraints.maxWidth / 2) - (cardWidth / 2);
                     final double centerY =
                         (constraints.maxHeight / 2) - (cardHeight / 2);
 
                     return Stack(
-                      children: List.generate(12, (index) {
-                        // Kartın ekrandaki hedef pozisyonunu bul
+                      children: List.generate(9, (index) {
                         int currentPos = _shuffledPositions.indexOf(index);
                         int row = currentPos ~/ 3;
                         int col = currentPos % 3;
 
-                        // Merkezde miyiz yoksa ızgarada mı?
                         double leftPos = _isGathered
                             ? centerX
-                            : (col * (cardWidth + spacing));
+                            : offsetX + (col * (cardWidth + spacing));
                         double topPos = _isGathered
                             ? centerY
-                            : (row * (cardHeight + spacing));
+                            : offsetY + (row * (cardHeight + spacing));
 
                         bool isSelected = _selectedIndex == index;
                         bool showFront =
@@ -344,8 +348,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
 
                         return AnimatedPositioned(
                           duration: const Duration(milliseconds: 500),
-                          curve: Curves
-                              .easeInOutCubicEmphasized, // Havalı bir ivmelenme
+                          curve: Curves.easeInOutCubicEmphasized,
                           left: leftPos,
                           top: topPos,
                           width: cardWidth,
@@ -396,7 +399,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                                 ),
                                 elevation: 10,
                                 shadowColor: theme.colorScheme.primary
-                                    .withOpacity(0.2),
+                                    .withValues(alpha: 0.2),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -435,7 +438,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                                 ),
                                 elevation: 10,
                                 shadowColor: theme.colorScheme.secondary
-                                    .withOpacity(0.3),
+                                    .withValues(alpha: 0.3),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -464,7 +467,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
     );
   }
 
-  // --- 3D KART ÇEVİRME ANİMASYONU ---
   Widget _build3DCard(bool showFront, int rewardAmount, ThemeData theme) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
@@ -494,7 +496,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
     );
   }
 
-  // KARTIN ÖN YÜZÜ (Şık ve Minimalist)
   Widget _buildCardFront(int amount, ThemeData theme, {Key? key}) {
     bool isJackpot = amount == 15;
     bool isEmpty = amount == 0;
@@ -507,14 +508,14 @@ class _DailySpinPageState extends State<DailySpinPage> {
         border: Border.all(
           color: isJackpot
               ? const Color(0xFFFFD54F)
-              : theme.colorScheme.primary.withOpacity(0.05),
+              : theme.colorScheme.primary.withValues(alpha: 0.05),
           width: isJackpot ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isJackpot
-                ? const Color(0xFFFFD54F).withOpacity(0.2)
-                : Colors.black.withOpacity(0.05),
+                ? const Color(0xFFFFD54F).withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -531,7 +532,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                         ? Icons.diamond_rounded
                         : Icons.monetization_on_rounded),
               color: isEmpty
-                  ? theme.colorScheme.primary.withOpacity(0.2)
+                  ? theme.colorScheme.primary.withValues(alpha: 0.2)
                   : (isJackpot
                         ? const Color(0xFFFFD54F)
                         : const Color(0xFF66BB6A)),
@@ -544,7 +545,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
                 color: isEmpty
-                    ? theme.colorScheme.primary.withOpacity(0.2)
+                    ? theme.colorScheme.primary.withValues(alpha: 0.2)
                     : (isJackpot
                           ? const Color(0xFFFFD54F)
                           : theme.colorScheme.primary),
@@ -556,29 +557,28 @@ class _DailySpinPageState extends State<DailySpinPage> {
     );
   }
 
-  // KARTIN ARKA YÜZÜ (Premium Dokunuş)
   Widget _buildCardBack(ThemeData theme, {Key? key}) {
     return Container(
       key: key,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary, // Temanın asil rengi
+        color: theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: theme.scaffoldBackgroundColor.withOpacity(0.1),
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.1),
           width: 2,
         ),
       ),
       child: Center(
         child: Icon(
           Icons.star_rounded,
-          color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
           size: 40,
         ),
       ),

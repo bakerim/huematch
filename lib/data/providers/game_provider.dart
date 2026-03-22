@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:audioplayers/audioplayers.dart'; // 🔥 Ses kütüphanesi
 
 import '../models/card_model.dart';
 import '../services/notification_service.dart';
@@ -20,6 +21,9 @@ class GameProvider extends ChangeNotifier {
   int _matchesFound = 0;
 
   Timer? _gameTimer;
+  Timer? _delayedGameOverTimer;
+  Timer? _memorizeTimer;
+
   int _timeLeft = 0;
   int get timeLeft => _timeLeft;
 
@@ -82,17 +86,48 @@ class GameProvider extends ChangeNotifier {
 
   Map<String, int> _levelStars = {};
 
-  // ==========================================================
-  // 🔥 CİNLİK 1 & 2: İPUCU VE KIL PAYI DEĞİŞKENLERİ
-  // ==========================================================
-  int _hintCount = 1; // Oyuncuya başlangıçta 1 bedava ipucu veriyoruz (yem)
+  int _hintCount = 1;
   int get hintCount => _hintCount;
 
-  List<int> _hintedCardIndices = []; // İpucu ile parlayan kartlar
+  List<int> _hintedCardIndices = [];
   List<int> get hintedCardIndices => _hintedCardIndices;
 
-  List<int> _nearMissIndices = []; // Süre bitince kahreden o son kartlar
+  List<int> _nearMissIndices = [];
   List<int> get nearMissIndices => _nearMissIndices;
+
+  // ==========================================================
+  // 🔥 SES MOTORU VE OYNATICILAR (Senin belirlediğin isimlerle)
+  // ==========================================================
+  final AudioPlayer _sfxFlipPlayer = AudioPlayer();
+  final AudioPlayer _sfxCorrectPlayer = AudioPlayer();
+  final AudioPlayer _sfxIncorrectPlayer = AudioPlayer();
+  final AudioPlayer _sfxGainPlayer = AudioPlayer();
+  final AudioPlayer _sfxLosePlayer = AudioPlayer();
+  final AudioPlayer _sfxPanicPlayer = AudioPlayer();
+  final AudioPlayer _sfxButtonPlayer = AudioPlayer(); // UI Butonları için!
+  final AudioPlayer _bgmPlayer = AudioPlayer();
+
+  void _playSfx(AudioPlayer player, String path) {
+    if (_isSoundEnabled) {
+      player.play(AssetSource('sounds/$path'));
+    }
+  }
+
+  // UI sayfalarından kolayca çağırabilmen için özel buton sesi metodu:
+  // Kullanımı: context.read<GameProvider>().playButtonClickSound();
+  void playButtonClickSound() {
+    _playSfx(_sfxButtonPlayer, 'button_click.mp3');
+  }
+
+  void _startBgm() {
+    if (_isSoundEnabled) {
+      _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+      _bgmPlayer.setVolume(0.3); // Arka plan müziği kısık sesle çalsın
+      _bgmPlayer.play(AssetSource('sounds/ambient_bg.mp3'));
+    } else {
+      _bgmPlayer.stop();
+    }
+  }
   // ==========================================================
 
   int getStarsForLevel(int level) {
@@ -101,12 +136,15 @@ class GameProvider extends ChangeNotifier {
 
   int get memorizeTimeMilliseconds {
     if (_currentLevel <= 15) return 3000;
-    if (_currentLevel <= 50)
+    if (_currentLevel <= 50) {
       return max(2000, 3000 - ((_currentLevel - 15) * 20));
-    if (_currentLevel <= 150)
+    }
+    if (_currentLevel <= 150) {
       return max(1500, 2500 - ((_currentLevel - 50) * 10));
-    if (_currentLevel <= 300)
+    }
+    if (_currentLevel <= 300) {
       return max(1000, 1500 - ((_currentLevel - 150) * 5));
+    }
     return 800;
   }
 
@@ -119,6 +157,7 @@ class GameProvider extends ChangeNotifier {
 
   GameProvider() {
     _loadSavedData();
+    _startBgm(); // Oyun açılır açılmaz müzik pusuya yatar
   }
 
   Future<void> _loadSavedData() async {
@@ -127,7 +166,7 @@ class GameProvider extends ChangeNotifier {
     _highestLevel = prefs.getInt('highestLevel') ?? 1;
     _totalCoins = prefs.getInt('totalCoins') ?? 0;
     _piggyBankCoins = prefs.getInt('piggyBankCoins') ?? 0;
-    _hintCount = prefs.getInt('hintCount') ?? 1; // İpuçlarını yükle
+    _hintCount = prefs.getInt('hintCount') ?? 1;
     _isVibrationEnabled = prefs.getBool('isVibrationEnabled') ?? true;
     _isSoundEnabled = prefs.getBool('isSoundEnabled') ?? true;
     _ownedThemes = prefs.getStringList('ownedThemes') ?? ['classic'];
@@ -156,7 +195,7 @@ class GameProvider extends ChangeNotifier {
 
     await prefs.setInt('totalCoins', _totalCoins);
     await prefs.setInt('piggyBankCoins', _piggyBankCoins);
-    await prefs.setInt('hintCount', _hintCount); // İpuçlarını kaydet
+    await prefs.setInt('hintCount', _hintCount);
     await prefs.setStringList('ownedThemes', _ownedThemes);
     await prefs.setString('currentTheme', _currentTheme);
     await prefs.setString('lastFreeSpinDate', _lastFreeSpinDate);
@@ -165,6 +204,10 @@ class GameProvider extends ChangeNotifier {
 
   void startGame() {
     _gameTimer?.cancel();
+    _delayedGameOverTimer?.cancel();
+    _memorizeTimer?.cancel();
+    _sfxPanicPlayer.stop(); // Panik sesini sustur!
+
     _cards.clear();
     _currentFlippedCards.clear();
     _hintedCardIndices.clear();
@@ -178,27 +221,36 @@ class GameProvider extends ChangeNotifier {
     _generateCards();
     notifyListeners();
 
-    Timer(Duration(milliseconds: memorizeTimeMilliseconds), () {
-      for (var card in _cards) {
-        card.isFlipped = false;
-      }
-      _isLocked = false;
-      _startCountdown();
-      notifyListeners();
-    });
+    _memorizeTimer = Timer(
+      Duration(milliseconds: memorizeTimeMilliseconds),
+      () {
+        for (var card in _cards) {
+          card.isFlipped = false;
+        }
+        _isLocked = false;
+        _startCountdown();
+        notifyListeners();
+      },
+    );
   }
 
-  // 🔥 CİNLİK 2: KIL PAYI (NEAR MISS) ETKİSİ BURADA!
   void _startCountdown() {
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeLeft > 0) {
         _timeLeft--;
+
+        if (_timeLeft <= 10 && _timeLeft > 0) {
+          if (_isVibrationEnabled) HapticFeedback.selectionClick();
+          // 🔥 YENİ: Süre azaldığında 'time_left' sesini çal
+          _playSfx(_sfxPanicPlayer, 'time_left.mp3');
+        }
+
         notifyListeners();
       } else {
         _gameTimer?.cancel();
-        _isLocked = true; // Oyuncunun hamle yapmasını engelle
+        _isLocked = true;
+        _sfxPanicPlayer.stop(); // Süre bitince panik sesini sustur
 
-        // EŞLEŞMEYEN 2 KARTI BUL VE YÜZÜNÜ ÇEVİRİP KIRMIZIYA BOYA!
         int firstMiss = _cards.indexWhere((c) => !c.isMatched);
         if (firstMiss != -1) {
           int secondMiss = _cards.indexWhere(
@@ -217,17 +269,14 @@ class GameProvider extends ChangeNotifier {
         }
         notifyListeners();
 
-        // Zeigarnik Etkisi: 1.5 Saniye boyunca oyuncunun o kartlara bakıp kahrolmasını sağla!
-        Timer(const Duration(milliseconds: 1500), () {
-          _isTimeUp = true; // Şimdi reklam teklifi ekranını bas!
+        _delayedGameOverTimer = Timer(const Duration(milliseconds: 1500), () {
+          _isTimeUp = true;
           _gameOver(failed: true);
-          notifyListeners();
         });
       }
     });
   }
 
-  // 🔥 CİNLİK 1: ÇARESİZLİK (İPUCU) SİSTEMİ
   void useHint(VoidCallback onShowAd) {
     if (_isLocked || _isGameOver || _isTimeUp) return;
 
@@ -235,10 +284,8 @@ class GameProvider extends ChangeNotifier {
       _hintCount--;
       _saveData();
 
-      // Henüz açılmamış ve eşleşmemiş ilk kartı bul
       int firstIndex = _cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
       if (firstIndex != -1) {
-        // Onun eşini bul
         int secondIndex = _cards.indexWhere(
           (c) =>
               !c.isMatched &&
@@ -249,18 +296,22 @@ class GameProvider extends ChangeNotifier {
 
         if (secondIndex != -1) {
           if (_isVibrationEnabled) HapticFeedback.mediumImpact();
+          // İpucu kullanılınca kartlar açılırken ses çal
+          _playSfx(_sfxFlipPlayer, 'card_flip.mp3');
+
           _cards[firstIndex].isFlipped = true;
           _cards[secondIndex].isFlipped = true;
-          _hintedCardIndices = [firstIndex, secondIndex]; // Kartları parlat
-          _isLocked = true; // İpucu süresince başka karta tıklanamaz
+          _hintedCardIndices = [firstIndex, secondIndex];
+          _isLocked = true;
           notifyListeners();
 
-          // 2 saniye göster ve geri kapat
           Timer(const Duration(milliseconds: 2000), () {
-            if (!_cards[firstIndex].isMatched)
+            if (!_cards[firstIndex].isMatched) {
               _cards[firstIndex].isFlipped = false;
-            if (!_cards[secondIndex].isMatched)
+            }
+            if (!_cards[secondIndex].isMatched) {
               _cards[secondIndex].isFlipped = false;
+            }
             _hintedCardIndices.clear();
             _isLocked = false;
             notifyListeners();
@@ -268,7 +319,6 @@ class GameProvider extends ChangeNotifier {
         }
       }
     } else {
-      // İPUCU BİTTİYSE REKLAMA ZORLA!
       onShowAd();
     }
   }
@@ -285,7 +335,6 @@ class GameProvider extends ChangeNotifier {
     _isGameOver = false;
     _isLocked = false;
 
-    // Kıl payı kartlarını kapat, oyuna devam et
     for (int index in _nearMissIndices) {
       if (!_cards[index].isMatched) {
         _cards[index].isFlipped = false;
@@ -322,7 +371,7 @@ class GameProvider extends ChangeNotifier {
     final Color cGreen = const Color(0xFF66BB6A);
     final Color cRed = const Color(0xFFEF5350);
     final Color cPurple = const Color(0xFFAB47BC);
-    final Color cOrange = const Color(0xFFFFA726);
+    final Color cOrange = const Color(0xFFFF9800);
     final Color cPink = const Color(0xFFEC407A);
     final Color cCyan = const Color(0xFF26C6DA);
     final Color cLime = const Color(0xFFD4E157);
@@ -483,10 +532,14 @@ class GameProvider extends ChangeNotifier {
         _isGameOver ||
         _isTimeUp ||
         _cards[index].isFlipped ||
-        _cards[index].isMatched)
+        _cards[index].isMatched) {
       return;
+    }
 
     if (_isVibrationEnabled) HapticFeedback.lightImpact();
+
+    // 🔥 YENİ: Kart çevirme sesi
+    _playSfx(_sfxFlipPlayer, 'card_flip.mp3');
 
     _cards[index].isFlipped = true;
     _currentFlippedCards.add(index);
@@ -507,6 +560,9 @@ class GameProvider extends ChangeNotifier {
 
     if (isMatch) {
       if (_isVibrationEnabled) HapticFeedback.mediumImpact();
+      // 🔥 YENİ: Doğru Eşleşme
+      _playSfx(_sfxCorrectPlayer, 'correct_match.mp3');
+
       _cards[firstIndex].isMatched = true;
       _cards[secondIndex].isMatched = true;
       _matchesFound++;
@@ -517,6 +573,9 @@ class GameProvider extends ChangeNotifier {
       notifyListeners();
     } else {
       if (_isVibrationEnabled) HapticFeedback.vibrate();
+      // 🔥 YENİ: Hatalı Eşleşme
+      _playSfx(_sfxIncorrectPlayer, 'incorrect_match.mp3');
+
       await Future.delayed(const Duration(milliseconds: 1000));
       _cards[firstIndex].isFlipped = false;
       _cards[secondIndex].isFlipped = false;
@@ -527,15 +586,22 @@ class GameProvider extends ChangeNotifier {
   void _gameOver({required bool failed}) {
     _isGameOver = true;
     _gameTimer?.cancel();
+    _sfxPanicPlayer.stop(); // Panik sesini durdur
+
     _gamesPlayed++;
     _isDoubleCoinClaimed = false;
 
     if (failed) {
       _lastLevelScore = 0;
       _lastEarnedCoins = 0;
+      // 🔥 YENİ: Süre Bitti (Kaybettin)
+      _playSfx(_sfxLosePlayer, 'level_lose.mp3');
     } else {
       _lastLevelScore = calculateScore();
       _totalScore += _lastLevelScore;
+
+      // 🔥 YENİ: Seviye Tamamlandı
+      _playSfx(_sfxGainPlayer, 'level_win.mp3');
 
       int stars = calculateStars();
       int previousStars = _levelStars[_currentLevel.toString()] ?? 0;
@@ -543,14 +609,23 @@ class GameProvider extends ChangeNotifier {
         _levelStars[_currentLevel.toString()] = stars;
       }
 
-      if (stars == 3)
+      if (stars == 3) {
         _lastEarnedCoins = 2;
-      else if (stars == 2)
+      } else if (stars == 2) {
         _lastEarnedCoins = 1;
-      else
+      } else {
         _lastEarnedCoins = 0;
+      }
 
       _totalCoins += _lastEarnedCoins;
+
+      // Eğer altın kazandıysa, win sesinden hemen sonra coin sesi çok gürültü yapabilir.
+      // Win sesi zaten yeterliyse burayı kapatabilirsin ama şimdilik "şıngırtı" efekti olarak duruyor.
+      if (_lastEarnedCoins > 0) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
+        });
+      }
 
       if (_piggyBankCoins < maxPiggyBankCoins) {
         _piggyBankCoins = min(maxPiggyBankCoins, _piggyBankCoins + 10);
@@ -570,6 +645,8 @@ class GameProvider extends ChangeNotifier {
     if (_piggyBankCoins > 0) {
       _totalCoins += _piggyBankCoins;
       _piggyBankCoins = 0;
+      // 🔥 YENİ: Altın kazanma efekti
+      _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
       _saveData();
       notifyListeners();
     }
@@ -588,7 +665,10 @@ class GameProvider extends ChangeNotifier {
   }
 
   void applySpinReward(int reward, bool isFreeSpin) {
-    if (reward > 0) _totalCoins += reward;
+    if (reward > 0) {
+      _totalCoins += reward;
+      _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
+    }
     if (isFreeSpin) {
       _lastFreeSpinDate = DateTime.now().toIso8601String().split('T')[0];
       NotificationService().scheduleDailySpinNotification();
@@ -601,6 +681,7 @@ class GameProvider extends ChangeNotifier {
     if (_totalCoins >= price && !_ownedThemes.contains(themeId)) {
       _totalCoins -= price;
       _ownedThemes.add(themeId);
+      _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
       _saveData();
       notifyListeners();
       return true;
@@ -618,6 +699,7 @@ class GameProvider extends ChangeNotifier {
 
   void buyCoinPackage(int amount) {
     _totalCoins += amount;
+    _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
     _saveData();
     notifyListeners();
   }
@@ -633,12 +715,20 @@ class GameProvider extends ChangeNotifier {
     _isSoundEnabled = !_isSoundEnabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isSoundEnabled', _isSoundEnabled);
+
+    if (_isSoundEnabled) {
+      _startBgm();
+    } else {
+      _bgmPlayer.stop();
+    }
+
     notifyListeners();
   }
 
   void claimDoubleCoins() {
     if (!_isDoubleCoinClaimed && _lastEarnedCoins > 0) {
       _totalCoins += _lastEarnedCoins;
+      _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
       _isDoubleCoinClaimed = true;
       _saveData();
       notifyListeners();
@@ -647,6 +737,7 @@ class GameProvider extends ChangeNotifier {
 
   void addBonusCoins(int amount) {
     _totalCoins += amount;
+    _playSfx(_sfxGainPlayer, 'coin_gain.mp3');
     _saveData();
     notifyListeners();
   }
@@ -664,12 +755,15 @@ class GameProvider extends ChangeNotifier {
 
   void pauseGame() {
     _gameTimer?.cancel();
+    _sfxPanicPlayer.stop();
+    _bgmPlayer.pause();
     notifyListeners();
   }
 
   void resumeGame() {
     if (!_isGameOver && !_isLocked && !_isTimeUp) {
       _startCountdown();
+      _bgmPlayer.resume();
       notifyListeners();
     }
   }
@@ -677,6 +771,18 @@ class GameProvider extends ChangeNotifier {
   @override
   void dispose() {
     _gameTimer?.cancel();
+    _delayedGameOverTimer?.cancel();
+    _memorizeTimer?.cancel();
+
+    // RAM Dostu Temizlik!
+    _sfxFlipPlayer.dispose();
+    _sfxCorrectPlayer.dispose();
+    _sfxIncorrectPlayer.dispose();
+    _sfxGainPlayer.dispose();
+    _sfxLosePlayer.dispose();
+    _sfxPanicPlayer.dispose();
+    _sfxButtonPlayer.dispose(); // UI Buton Player
+    _bgmPlayer.dispose();
     super.dispose();
   }
 }

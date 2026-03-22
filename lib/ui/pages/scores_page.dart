@@ -50,7 +50,7 @@ class ScoresPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.primary.withOpacity(0.5), // DİNAMİK SOLUK YAZI
+                  color: theme.colorScheme.primary.withAlpha(128), // DİNAMİK SOLUK YAZI
                 ),
               ),
               const SizedBox(height: 40),
@@ -101,7 +101,7 @@ class ScoresPage extends StatelessWidget {
         color: theme.colorScheme.surface, // DİNAMİK KART RENGİ
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))
+          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 15, offset: const Offset(0, 8))
         ],
       ),
       child: Row(
@@ -109,7 +109,7 @@ class ScoresPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.15),
+              color: iconColor.withAlpha(38),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 36),
@@ -124,7 +124,7 @@ class ScoresPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary.withOpacity(0.5),
+                    color: theme.colorScheme.primary.withAlpha(128),
                   ),
                 ),
                 const SizedBox(height: 4),

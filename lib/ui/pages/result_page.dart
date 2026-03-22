@@ -23,9 +23,27 @@ class _ResultPageState extends State<ResultPage>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  // 🔥 YENİ: SNAPSHOT (ANLIK GÖRÜNTÜ) DEĞİŞKENLERİ
+  // Sayfa açıldığında değerleri kilitliyoruz ki "Tekrar Dene" ye basınca
+  // arkadaki skorlar sıfırlanırken ekran bir anlığına KAZANDIN tasarımına geçmesin!
+  late bool _isFailed;
+  late int _stars;
+  late int _levelScore;
+  late int _earnedCoins;
+  late int _currentLevel;
+
   @override
   void initState() {
     super.initState();
+
+    // Değerleri sadece 1 KERE alıp donduruyoruz.
+    final provider = context.read<GameProvider>();
+    _isFailed = provider.isTimeUp;
+    _stars = _isFailed ? 0 : provider.calculateStars();
+    _levelScore = _isFailed ? 0 : provider.lastLevelScore;
+    _earnedCoins = _isFailed ? 0 : provider.lastEarnedCoins;
+    _currentLevel = provider.currentLevel;
+
     _loadBannerAd();
 
     _pulseController = AnimationController(
@@ -61,15 +79,9 @@ class _ResultPageState extends State<ResultPage>
 
   @override
   Widget build(BuildContext context) {
+    // Sadece butonların durumunu güncellemek için hala watch kullanıyoruz
     final gameProvider = context.watch<GameProvider>();
     final theme = Theme.of(context);
-
-    bool isFailed = gameProvider.isTimeUp;
-
-    final int stars = isFailed ? 0 : gameProvider.calculateStars();
-    final int levelScore = isFailed ? 0 : gameProvider.lastLevelScore;
-    final int earnedCoins = isFailed ? 0 : gameProvider.lastEarnedCoins;
-    final int currentLevel = gameProvider.currentLevel;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -87,13 +99,13 @@ class _ResultPageState extends State<ResultPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        isFailed
+                        _isFailed
                             ? "SÜRE DOLDU"
-                            : "LEVEL $currentLevel TAMAMLANDI",
+                            : "LEVEL $_currentLevel TAMAMLANDI",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: isFailed
+                          color: _isFailed
                               ? Colors.redAccent
                               : Colors.grey.shade500,
                           letterSpacing: 2.0,
@@ -101,10 +113,10 @@ class _ResultPageState extends State<ResultPage>
                       ),
                       const SizedBox(height: 8),
 
-                      _buildHeader(stars, isFailed, theme),
+                      _buildHeader(_stars, _isFailed, theme),
                       const SizedBox(height: 32),
 
-                      _buildStars(stars, isFailed),
+                      _buildStars(_stars, _isFailed),
                       const SizedBox(height: 32),
 
                       Row(
@@ -112,7 +124,7 @@ class _ResultPageState extends State<ResultPage>
                           Expanded(
                             child: _buildStatCard(
                               "BÖLÜM PUANI",
-                              "+$levelScore",
+                              "+$_levelScore",
                               theme.colorScheme.primary,
                               theme,
                             ),
@@ -121,7 +133,7 @@ class _ResultPageState extends State<ResultPage>
                           Expanded(
                             child: _buildStatCard(
                               "KAZANILAN",
-                              "+$earnedCoins",
+                              "+$_earnedCoins",
                               const Color(0xFFFFD54F),
                               theme,
                               icon: Icons.monetization_on_rounded,
@@ -131,15 +143,15 @@ class _ResultPageState extends State<ResultPage>
                       ),
                       const SizedBox(height: 24),
 
-                      if (isFailed)
+                      if (_isFailed)
                         _buildRetryButton(context, gameProvider, theme)
                       else ...[
                         if (!gameProvider.isDoubleCoinClaimed &&
-                            earnedCoins > 0)
+                            _earnedCoins > 0)
                           _buildDoubleCoinsButton(
                             context,
                             gameProvider,
-                            earnedCoins,
+                            _earnedCoins,
                             theme,
                           ),
 
@@ -157,7 +169,7 @@ class _ResultPageState extends State<ResultPage>
                           ),
 
                         if (!gameProvider.isDoubleCoinClaimed &&
-                            earnedCoins > 0)
+                            _earnedCoins > 0)
                           const SizedBox(height: 24),
 
                         _buildActionButtons(context, gameProvider, theme),
@@ -202,7 +214,7 @@ class _ResultPageState extends State<ResultPage>
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+              color: const Color(0xFFFFD54F).withOpacity(0.5),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -245,7 +257,7 @@ class _ResultPageState extends State<ResultPage>
                     Text(
                       "Bedava +$amount Altın Al",
                       style: TextStyle(
-                        color: Colors.black87.withValues(alpha: 0.7),
+                        color: Colors.black87.withOpacity(0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -307,7 +319,7 @@ class _ResultPageState extends State<ResultPage>
             child: Text(
               "Haritaya Dön",
               style: TextStyle(
-                color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                color: theme.colorScheme.primary.withOpacity(0.6),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -362,13 +374,11 @@ class _ResultPageState extends State<ResultPage>
                   size: size,
                   color: isEarned
                       ? const Color(0xFFFFD54F)
-                      : Colors.grey.withValues(alpha: 0.3),
+                      : Colors.grey.withOpacity(0.3),
                   shadows: isEarned
                       ? [
                           BoxShadow(
-                            color: const Color(
-                              0xFFFFD54F,
-                            ).withValues(alpha: 0.5),
+                            color: const Color(0xFFFFD54F).withOpacity(0.5),
                             blurRadius: 15,
                           ),
                         ]
@@ -396,7 +406,7 @@ class _ResultPageState extends State<ResultPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -458,7 +468,7 @@ class _ResultPageState extends State<ResultPage>
               foregroundColor: theme.colorScheme.primary,
               elevation: 0,
               side: BorderSide(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                color: theme.colorScheme.primary.withOpacity(0.2),
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
@@ -494,7 +504,7 @@ class _ResultPageState extends State<ResultPage>
               );
             },
             style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.5),
+              foregroundColor: theme.colorScheme.primary.withOpacity(0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),

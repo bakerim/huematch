@@ -4,29 +4,27 @@ import 'package:flutter/material.dart';
 class AdManager {
   static InterstitialAd? _interstitialAd;
   static RewardedAd? _rewardedAd;
-  static AppOpenAd? _appOpenAd; // 🔥 ŞAŞIRTICI HAMLE: AÇILIŞ REKLAMI!
+  static AppOpenAd? _appOpenAd; 
   static bool _isShowingAd = false;
 
-  // --- GOOGLE TEST ADMOB ID'LERİ (Canlıya çıkarken seninkilerle değişecek) ---
+  // --- GOOGLE TEST ADMOB ID'LERİ ---
   static String get interstitialAdUnitId =>
       'ca-app-pub-3940256099942544/1033173712';
   static String get rewardedAdUnitId =>
       'ca-app-pub-3940256099942544/5224354917';
   static String get bannerAdUnitId =>
-      'ca-app-pub-3940256099942544/6300978111'; // 🔥 YENİ: BANNER
+      'ca-app-pub-3940256099942544/6300978111'; 
   static String get appOpenAdUnitId =>
-      'ca-app-pub-3940256099942544/9257395921'; // 🔥 YENİ: APP OPEN
+      'ca-app-pub-3940256099942544/9257395921'; 
 
   // =======================================================================
-  // 1. SESSİZ İŞÇİ: BANNER REKLAMI (Widget olarak döner, istediğin yere as)
+  // 1. SESSİZ İŞÇİ: BANNER REKLAMI
   // =======================================================================
   static BannerAd createBannerAd({BannerAdListener? listener}) {
     return BannerAd(
       adUnitId: bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
-      // Eğer sayfa kendi dinleyicisini (listener) yollarsa onu kullan, 
-      // yollamazsa senin o efsane orijinal log sistemini çalıştır!
       listener: listener ?? BannerAdListener(
         onAdLoaded: (ad) => debugPrint('✅ Banner Yüklendi! Ekmeğimiz pişiyor.'),
         onAdFailedToLoad: (ad, error) {
@@ -34,7 +32,7 @@ class AdManager {
           ad.dispose();
         },
       ),
-    ); // DİKKAT: Buradaki ..load() kısmını kaldırdık! Çünkü artık sayfalarda kendi ..load() komutumuzu veriyoruz, iki defa yüklemeye çalışıp crash olmasın.
+    ); 
   }
 
   // =======================================================================
@@ -64,7 +62,7 @@ class AdManager {
         onAdDismissedFullScreenContent: (ad) {
           _isShowingAd = false;
           ad.dispose();
-          loadInterstitialAd(); // Mermiyi yeniden namluya sür
+          loadInterstitialAd(); 
           onClosed();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
@@ -77,12 +75,14 @@ class AdManager {
       _interstitialAd!.show();
       _interstitialAd = null;
     } else {
-      onClosed(); // Hazır değilse oyuncuyu bekletme, direkt oyuna sok!
+      // Reklam yoksa hiç bekletme, direkt geçir!
+      onClosed(); 
+      loadInterstitialAd(); // Arkadan sessizce yenisini yüklemeyi dene
     }
   }
 
   // =======================================================================
-  // 3. ALTIN KANCA: ÖDÜLLÜ REKLAM (Rewarded)
+  // 3. ALTIN KANCA: ÖDÜLLÜ REKLAM (Rewarded) - 🔥 B PLANI EKLENDİ!
   // =======================================================================
   static void loadRewardedAd() {
     RewardedAd.load(
@@ -124,28 +124,41 @@ class AdManager {
       );
       _rewardedAd!.show(
         onUserEarnedReward: (ad, reward) {
-          onRewardEarned(); // Müşteri videoyu sonuna kadar izledi, parayı ver!
+          onRewardEarned(); 
         },
       );
       _rewardedAd = null;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            "Reklam bağlantısı kuruluyor, lütfen 3-4 saniye bekleyip tekrar dene!",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: Colors.orange.shade800,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      loadRewardedAd();
-      onClosed();
+      // 🔥 B PLANI (FALLBACK): REKLAM YOKSA BİLE ÖDÜLÜ VER VE ÇÖKMEYİ ENGELLE!
+      debugPrint('⚠️ Acil Durum: Reklam yok ama oyuncuya kıyak geçiyoruz!');
+      
+      try {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                "Reklam bağlantısı kurulamadı ama seni mağdur etmiyoruz! Ödül bizden 😉",
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        // Eğer context uçmuşsa (sayfa kapandıysa) çökmeyi engelle!
+        debugPrint("SnackBar gösterilemedi ama sorun yok, oyun devam ediyor.");
+      }
+
+      onRewardEarned(); // Ödülü hesaba yatır!
+      loadRewardedAd(); // Arka planda yenisini dene
+      onClosed();       // Ekranı kapatıp oyuna döndür
     }
   }
 
   // =======================================================================
-  // 4. 🔥 SİNSİ SİLAH: UYGULAMA AÇILIŞ REKLAMI (App Open Ad)
+  // 4. SİNSİ SİLAH: UYGULAMA AÇILIŞ REKLAMI (App Open Ad)
   // =======================================================================
   static void loadAppOpenAd() {
     AppOpenAd.load(
@@ -166,7 +179,7 @@ class AdManager {
 
   static void showAppOpenAdIfAvailable() {
     if (_appOpenAd == null || _isShowingAd) {
-      loadAppOpenAd(); // Yoksa yüklemeye başla
+      loadAppOpenAd(); 
       return;
     }
 
@@ -176,7 +189,7 @@ class AdManager {
         _isShowingAd = false;
         ad.dispose();
         _appOpenAd = null;
-        loadAppOpenAd(); // Bir sonraki açılış için hemen yenisini hazırla
+        loadAppOpenAd(); 
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         _isShowingAd = false;

@@ -33,7 +33,7 @@ class GameCard extends StatelessWidget {
     BoxBorder? border;
     List<BoxShadow>? shadow = [
       BoxShadow(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withAlpha(12),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
@@ -44,7 +44,7 @@ class GameCard extends StatelessWidget {
       closedBgColor = const Color(0xFF2C2C2E);
       shadow = [
         BoxShadow(
-          color: Colors.black.withOpacity(0.3),
+          color: Colors.black.withAlpha(76),
           blurRadius: 8,
           offset: const Offset(0, 4),
         ),
@@ -52,11 +52,11 @@ class GameCard extends StatelessWidget {
     } else if (theme == 'neon') {
       bgColor = Colors.black;
       closedBgColor = const Color(0xFF0D0D0D);
-      iconColor = card.color.withOpacity(0.9);
-      border = Border.all(color: card.color.withOpacity(0.8), width: 2);
+      iconColor = card.color.withAlpha(230);
+      border = Border.all(color: card.color.withAlpha(204), width: 2);
       shadow = [
         BoxShadow(
-          color: card.color.withOpacity(0.4),
+          color: card.color.withAlpha(102),
           blurRadius: 12,
           spreadRadius: 1,
         ),
@@ -66,12 +66,12 @@ class GameCard extends StatelessWidget {
       closedBgColor = const Color(0xFF1C1C1C);
       iconColor = const Color(0xFFFFD54F);
       border = Border.all(
-        color: const Color(0xFFFFD54F).withOpacity(0.5),
+        color: const Color(0xFFFFD54F).withAlpha(128),
         width: 1,
       );
       shadow = [
         BoxShadow(
-          color: const Color(0xFFFFD54F).withOpacity(0.2),
+          color: const Color(0xFFFFD54F).withAlpha(51),
           blurRadius: 10,
         ),
       ];
@@ -79,8 +79,8 @@ class GameCard extends StatelessWidget {
 
     // Eşleşmiş Kartın Solma (Fade) Efekti
     if (card.isMatched) {
-      bgColor = bgColor.withOpacity(0.5);
-      iconColor = iconColor.withOpacity(0.3);
+      bgColor = bgColor.withAlpha(128);
+      iconColor = iconColor.withAlpha(77);
       border = null;
       shadow = null;
     }
@@ -93,7 +93,7 @@ class GameCard extends StatelessWidget {
       border = Border.all(color: Colors.redAccent, width: 3);
       shadow = [
         BoxShadow(
-          color: Colors.redAccent.withOpacity(0.8),
+          color: Colors.redAccent.withAlpha(204),
           blurRadius: 20,
           spreadRadius: 5,
         ),
@@ -105,7 +105,7 @@ class GameCard extends StatelessWidget {
       border = Border.all(color: const Color(0xFF39FF14), width: 3);
       shadow = [
         BoxShadow(
-          color: const Color(0xFF39FF14).withOpacity(0.8),
+          color: const Color(0xFF39FF14).withAlpha(204),
           blurRadius: 20,
           spreadRadius: 5,
         ),

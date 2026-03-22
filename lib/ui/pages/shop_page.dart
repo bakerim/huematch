@@ -55,7 +55,7 @@ class ShopPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withAlpha(51),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -137,7 +137,7 @@ class ShopPage extends StatelessWidget {
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF673AB7).withOpacity(0.5),
+                      color: const Color(0xFF673AB7).withAlpha(128),
                       width: 2,
                     ),
                   ),
@@ -368,12 +368,12 @@ class ShopPage extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFFFD54F).withOpacity(0.5),
+          color: const Color(0xFFFFD54F).withAlpha(128),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFD54F).withOpacity(0.1),
+            color: const Color(0xFFFFD54F).withAlpha(25),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -387,7 +387,7 @@ class ShopPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFD54F).withOpacity(0.2),
+                  color: const Color(0xFFFFD54F).withAlpha(51),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -414,7 +414,7 @@ class ShopPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary.withOpacity(0.6),
+                        color: theme.colorScheme.primary.withAlpha(153),
                       ),
                     ),
                   ],
@@ -448,7 +448,7 @@ class ShopPage extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fillPercentage,
               minHeight: 12,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              backgroundColor: theme.colorScheme.primary.withAlpha(25),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFFFFD54F),
               ),
@@ -518,7 +518,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -568,7 +568,7 @@ class ShopPage extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                backgroundColor: theme.colorScheme.primary.withAlpha(25),
                 foregroundColor: theme.colorScheme.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -619,7 +619,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -756,7 +756,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -768,7 +768,7 @@ class ShopPage extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.15),
+              color: iconColor.withAlpha(38),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 32),

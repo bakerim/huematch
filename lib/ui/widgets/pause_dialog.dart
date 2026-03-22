@@ -25,7 +25,7 @@ class PauseDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withAlpha(51),
                 blurRadius: 30,
                 offset: const Offset(0, 15),
               )
@@ -51,7 +51,7 @@ class PauseDialog extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.primary.withOpacity(0.5),
+                  color: theme.colorScheme.primary.withAlpha(128),
                 ),
               ),
               const SizedBox(height: 40),
@@ -89,7 +89,7 @@ class PauseDialog extends StatelessWidget {
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: theme.colorScheme.primary, // DİNAMİK ÇİZGİ VE YAZI
-                    side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2), width: 2),
+                    side: BorderSide(color: theme.colorScheme.primary.withAlpha(51), width: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text("Yeniden Başlat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

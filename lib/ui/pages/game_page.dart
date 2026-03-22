@@ -16,13 +16,8 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GameProvider>().startGame();
-    });
-  }
+  // 🔥 BUG FIX: initState içindeki startGame çağrısını sildik!
+  // Çünkü "ResultPage" ve "LevelMapPage" oyunu başlatıp zaten buraya yönlendiriyor.
 
   @override
   Widget build(BuildContext context) {
@@ -56,20 +51,35 @@ class _GamePageState extends State<GamePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    if (!gameProvider.isTimeUp && !gameProvider.isGameOver)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildPauseButton(
+                                context,
+                                gameProvider,
+                                theme,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildHintButton(
+                                context,
+                                gameProvider,
+                                theme,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 80),
                   ],
                 ),
 
-                // 🔥 CİNLİK 1: ÇARESİZLİK / İPUCU BUTONU! (Sağ Altta)
-                if (!gameProvider.isLocked &&
-                    !gameProvider.isTimeUp &&
-                    !gameProvider.isGameOver)
-                  Positioned(
-                    bottom: 24,
-                    right: 24,
-                    child: _buildHintButton(context, gameProvider, theme),
-                  ),
-
-                // TİCARİ PUSU (SÜRE BİTTİ EKRANI)
                 if (gameProvider.isTimeUp)
                   _buildTimesUpOverlay(context, gameProvider, theme),
               ],
@@ -80,105 +90,6 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  // 🔥 YENİ: İPUCU BUTONU TASARIMI
-  Widget _buildHintButton(
-    BuildContext context,
-    GameProvider provider,
-    ThemeData theme,
-  ) {
-    bool hasFreeHint = provider.hintCount > 0;
-
-    return TweenAnimationBuilder(
-      tween: Tween<double>(begin: 0.8, end: 1.0),
-      duration: const Duration(seconds: 1),
-      curve: Curves.elasticOut,
-      builder: (context, double scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: GestureDetector(
-            onTap: () {
-              provider.useHint(() {
-                // HAKKI YOKSA REKLAM ÇAĞIRIRIZ!
-                AdManager.showRewardedAd(
-                  context: context,
-                  onRewardEarned: () {
-                    provider.addHints(1); // 1 İpucu ekle
-                    provider.useHint(() {}); // Ve hemen otomatik kullandır!
-                  },
-                  onClosed: () {},
-                );
-              });
-            },
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: hasFreeHint
-                      ? [theme.colorScheme.primary, theme.colorScheme.secondary]
-                      : [
-                          const Color(0xFFE53935),
-                          const Color(0xFFB71C1C),
-                        ], // Hakkı yoksa tehlikeli kırmızı!
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        (hasFreeHint
-                                ? theme.colorScheme.secondary
-                                : const Color(0xFFE53935))
-                            .withOpacity(0.5),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    hasFreeHint
-                        ? Icons.search_rounded
-                        : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  // Kalan Hak Rozeti
-                  if (hasFreeHint)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFD54F),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          "${provider.hintCount}",
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // --- Üst Bilgi Çubuğu ---
   Widget _buildTopBar(
     BuildContext context,
     GameProvider provider,
@@ -197,36 +108,6 @@ class _GamePageState extends State<GamePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              provider.pauseGame();
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const PauseDialog(),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.pause_rounded,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -251,33 +132,184 @@ class _GamePageState extends State<GamePage> {
             ),
           ),
 
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: timerBgColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.timer_outlined, color: timerTextColor, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  '${provider.timeLeft}s',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: timerTextColor,
+          TweenAnimationBuilder(
+            key: ValueKey(provider.timeLeft),
+            tween: Tween<double>(begin: isPanic ? 1.15 : 1.0, end: 1.0),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.elasticOut,
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: timerBgColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: isPanic
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFFE53935).withOpacity(0.5),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        color: timerTextColor,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${provider.timeLeft}s',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: timerTextColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // --- Kartların Dizildiği Ana Grid ---
+  Widget _buildPauseButton(
+    BuildContext context,
+    GameProvider provider,
+    ThemeData theme,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: () {
+        provider.pauseGame();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const PauseDialog(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.pause_rounded,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "DURDUR",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHintButton(
+    BuildContext context,
+    GameProvider provider,
+    ThemeData theme,
+  ) {
+    bool hasFreeHint = provider.hintCount > 0;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: () {
+        if (provider.isLocked) return;
+        provider.useHint(() {
+          AdManager.showRewardedAd(
+            context: context,
+            onRewardEarned: () {
+              provider.addHints(1);
+              provider.useHint(() {});
+            },
+            onClosed: () {},
+          );
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: hasFreeHint
+                ? [theme.colorScheme.primary, theme.colorScheme.secondary]
+                : [const Color(0xFFE53935), const Color(0xFFB71C1C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  (hasFreeHint
+                          ? theme.colorScheme.secondary
+                          : const Color(0xFFE53935))
+                      .withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                hasFreeHint ? Icons.search_rounded : Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                hasFreeHint ? "İPUCU (${provider.hintCount})" : "İPUCU (İZLE)",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGrid(GameProvider provider) {
     if (provider.cards.isEmpty) {
       return Center(
@@ -300,14 +332,13 @@ class _GamePageState extends State<GamePage> {
         final card = provider.cards[index];
         return GameCard(
           card: card,
-          index: index, // 🔥 YENİ: Kartın indeksini yolladık!
+          index: index,
           onTap: () => provider.onCardTapped(index),
         );
       },
     );
   }
 
-  // --- TİCARİ PUSU EKRANI ---
   Widget _buildTimesUpOverlay(
     BuildContext context,
     GameProvider provider,
