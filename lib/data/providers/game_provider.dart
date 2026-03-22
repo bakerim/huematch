@@ -23,8 +23,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _gameTimer;
   Timer? _delayedGameOverTimer;
   Timer? _memorizeTimer;
-
-  // 🔥 YENİ: NİNJA MODU ZAMANLAYICISI
   Timer? _mismatchTimer;
   int? _mismatchFirst;
   int? _mismatchSecond;
@@ -106,15 +104,13 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<int> get nearMissIndices => _nearMissIndices;
 
   // ==========================================================
-  // 🔥 ZIRHLI SES VE TİTREŞİM MİMARİSİ
+  // 🔥 FPS DOSTU (SIFIR GECİKME) SES VE TİTREŞİM MİMARİSİ
   // ==========================================================
   final AudioPlayer _bgmPlayer = AudioPlayer();
-  final List<AudioPlayer> _sfxPool = List.generate(
-    5,
-    (_) => AudioPlayer()..setReleaseMode(ReleaseMode.stop),
-  );
-  int _sfxIndex = 0;
-  int _lastSfxTime = 0;
+
+  // 🔥 DEĞİŞİM 1: Her ses için RAM'de hazır bekleyen bir oynatıcı haritası!
+  final Map<String, AudioPlayer> _sfxPlayers = {};
+
   int _lastVibrateTime = 0;
 
   Future<void> _initGlobalAudio() async {
@@ -132,25 +128,49 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       ),
     );
     await AudioPlayer.global.setAudioContext(audioContext);
+
+    // 🔥 DEĞİŞİM 2: Oyun açılırken bütün sesleri HARDDİSK'ten RAM'e çekiyoruz!
+    final sounds = [
+      'card_flip.mp3',
+      'correct_match.mp3',
+      'incorrect_match.mp3',
+      'button_click.mp3',
+      'time_left.mp3',
+      'level_win.mp3',
+      'level_lose.mp3',
+      'coin_gain.mp3',
+    ];
+
+    for (String s in sounds) {
+      final player = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+      // Yerel dosyayı AssetSource olarak player'a "Önceden" bağlıyoruz
+      await player.setSource(AssetSource('sounds/$s'));
+      _sfxPlayers[s] = player;
+    }
   }
 
+  // 🔥 DEĞİŞİM 3: Sıfır gecikmeli SFX oynatma.
   void _playSfx(String path) {
     if (!_isSfxEnabled) return;
 
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastSfxTime < 50) return;
-    _lastSfxTime = now;
-
-    final player = _sfxPool[_sfxIndex];
-    player.play(AssetSource('sounds/$path'), mode: PlayerMode.lowLatency);
-    _sfxIndex = (_sfxIndex + 1) % _sfxPool.length;
+    final player = _sfxPlayers[path];
+    if (player != null) {
+      // Dosya zaten RAM'de yüklü!
+      // Eğer o an çalıyorsa, saniyesinde başa sar. Çalmıyorsa başlat.
+      if (player.state == PlayerState.playing) {
+        player.seek(Duration.zero);
+      } else {
+        player.resume();
+      }
+    }
   }
 
+  // Titreşim kalkanı FPS'i korumak için 80ms ile sınırlandırıldı
   void _safeVibrate(int type) {
     if (!_isVibrationEnabled) return;
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastVibrateTime < 100) return;
+    if (now - _lastVibrateTime < 80) return;
     _lastVibrateTime = now;
 
     if (type == 1) {
@@ -316,7 +336,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         _gameTimer?.cancel();
         _isLocked = true;
-        _closeMismatchCards(); // Süre bitince açık kalan varsa kapat
+        _closeMismatchCards();
 
         int firstMiss = _cards.indexWhere((c) => !c.isMatched);
         if (firstMiss != -1) {
@@ -351,7 +371,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       _hintCount--;
       _saveData();
 
-      // İpucu alırken açıkta kalan yanlış kartlar varsa anında kapat
       _closeMismatchCards();
 
       int firstIndex = _cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
@@ -590,7 +609,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     return result;
   }
 
-  // 🔥 YENİ: Bekleyen hatalı kartları anında kapatan Ninja Metodu!
   void _closeMismatchCards() {
     if (_mismatchFirst != null && _mismatchSecond != null) {
       _cards[_mismatchFirst!].isFlipped = false;
@@ -609,8 +627,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    // 🔥 NİNJA MODU AKTİF: Eğer ekranda kapanmayı bekleyen hatalı kart varsa ve 3.ye bastıysan,
-    // beklemeyi iptal et ve o eski kartları anında yüzlerine çarp (kapat)!
     if (_mismatchTimer != null && _mismatchTimer!.isActive) {
       _mismatchTimer!.cancel();
       _closeMismatchCards();
@@ -652,7 +668,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       _safeVibrate(4);
       _playSfx('incorrect_match.mp3');
 
-      // 🔥 KİLİT YOK! Sadece kartları hafızaya alıp 1 saniyelik geri sayım başlatıyoruz.
       _mismatchFirst = firstIndex;
       _mismatchSecond = secondIndex;
 
@@ -666,8 +681,8 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   void _gameOver({required bool failed}) {
     _isGameOver = true;
     _gameTimer?.cancel();
-    _mismatchTimer?.cancel(); // Temizlik
-    _closeMismatchCards(); // Temizlik
+    _mismatchTimer?.cancel();
+    _closeMismatchCards();
 
     _gamesPlayed++;
     _isDoubleCoinClaimed = false;
@@ -848,7 +863,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isManuallyPaused = false;
       _startCountdown();
       if (_isMusicEnabled) _bgmPlayer.resume();
-      // Hatalı kartlar varsa geri dönüldüğünde hemen kapatılsın ki arayüz temiz kalsın
       _closeMismatchCards();
       notifyListeners();
     }
@@ -862,7 +876,8 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     _memorizeTimer?.cancel();
     _mismatchTimer?.cancel();
 
-    for (var player in _sfxPool) {
+    // RAM'e yüklediğimiz sesleri temizliyoruz
+    for (var player in _sfxPlayers.values) {
       player.dispose();
     }
     _bgmPlayer.dispose();
