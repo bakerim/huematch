@@ -1,12 +1,25 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    
+    // 🔥 FİREBASE DÜKKAN İÇİ EKLENTİSİ (JSON'I OKUYACAK OLAN KOD BU)
+    id("com.google.gms.google-services")
+}
+
+// 🔥 1. ADIM: GİZLİ KASAYI AÇIYORUZ (key.properties dosyasını okuma işlemi)
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
-    namespace = "com.example.myapp"
+    namespace = "com.movingpixel.huematch"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,16 +36,30 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapp"
+        applicationId = "com.movingpixel.huematch"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    // 🔥 2. ADIM: İMZALAMA AYARLARI (Tapu bilgilerini kasadan alıyoruz)
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            val storeFileProp = keystoreProperties.getProperty("storeFile")
+            if (storeFileProp != null) {
+                storeFile = file(storeFileProp)
+            }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // 🔥 3. ADIM: ARTIK "debug" DEĞİL, KENDİ GÜVENLİ "release" İMZAMIZI KULLANIYORUZ
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

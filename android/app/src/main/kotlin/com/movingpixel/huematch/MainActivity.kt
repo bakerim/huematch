@@ -1,4 +1,4 @@
-package com.example.myapp
+package com.movingpixel.huematch
 
 import io.flutter.embedding.android.FlutterActivity
 
