@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
+
 import '../../data/providers/game_provider.dart';
 
 class ScoresPage extends StatelessWidget {
@@ -8,10 +10,10 @@ class ScoresPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<GameProvider>();
-    final theme = Theme.of(context); // DİNAMİK TEMA MOTORU
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor, // TEMA ARKA PLANI
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -20,9 +22,9 @@ class ScoresPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "İSTATİSTİKLER",
+          "scores".tr().toUpperCase(),
           style: TextStyle(
-            color: theme.colorScheme.primary, // DİNAMİK YAZI
+            color: theme.colorScheme.primary,
             fontSize: 18,
             fontWeight: FontWeight.w900,
             letterSpacing: 2.0,
@@ -37,20 +39,20 @@ class ScoresPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Kişisel Rekorların",
+                "personal_records".tr(),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: theme.colorScheme.primary, // DİNAMİK YAZI
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Bu değerler cihazına kaydedilmiştir.",
+                "records_saved_on_device".tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.primary.withAlpha(128), // DİNAMİK SOLUK YAZI
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 40),
@@ -59,7 +61,7 @@ class ScoresPage extends StatelessWidget {
                 theme: theme,
                 icon: Icons.emoji_events_rounded,
                 iconColor: const Color(0xFFFFD54F),
-                title: "En Yüksek Toplam Puan",
+                title: "highest_total_score".tr(),
                 value: "${provider.highScore}",
               ),
               const SizedBox(height: 20),
@@ -68,8 +70,8 @@ class ScoresPage extends StatelessWidget {
                 theme: theme,
                 icon: Icons.military_tech_rounded,
                 iconColor: const Color(0xFF42A5F5),
-                title: "Ulaşılan En Yüksek Seviye",
-                value: "Level ${provider.highestLevel}",
+                title: "highest_level_reached".tr(),
+                value: "${"level".tr()} ${provider.highestLevel}",
               ),
               const SizedBox(height: 20),
 
@@ -77,8 +79,8 @@ class ScoresPage extends StatelessWidget {
                 theme: theme,
                 icon: Icons.monetization_on_rounded,
                 iconColor: const Color(0xFF66BB6A),
-                title: "Mevcut Altın (Cüzdan)",
-                value: "${provider.totalCoins} Coin",
+                title: "current_coins_wallet".tr(),
+                value: "${provider.totalCoins} ${"coins".tr()}",
               ),
             ],
           ),
@@ -98,10 +100,10 @@ class ScoresPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface, // DİNAMİK KART RENGİ
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 15, offset: const Offset(0, 8))
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))
         ],
       ),
       child: Row(
@@ -109,7 +111,7 @@ class ScoresPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(38),
+              color: iconColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 36),
@@ -124,7 +126,7 @@ class ScoresPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary.withAlpha(128),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -133,7 +135,7 @@ class ScoresPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: theme.colorScheme.primary, // DİNAMİK DEĞER RENGİ
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ],

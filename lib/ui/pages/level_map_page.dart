@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
@@ -17,7 +18,6 @@ class LevelMapPage extends StatefulWidget {
 class _LevelMapPageState extends State<LevelMapPage> {
   late ScrollController _scrollController;
 
-  // 🔥 REKLAM SİSTEMİ DEĞİŞKENLERİ
   BannerAd? _bannerAd;
   bool _isBannerLoaded = false;
 
@@ -28,23 +28,22 @@ class _LevelMapPageState extends State<LevelMapPage> {
     super.initState();
     _scrollController = ScrollController();
 
-    // 1. Banner'ı yükle
     _loadBannerAd();
 
-    // 2. Sayfa render edildikten HEMEN SONRA scroll işlemini tetikle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToCurrentLevel();
     });
   }
 
-  // 🔥 BANNER YÜKLEME FONKSİYONU (HATA DÜZELTİLDİ: listener içeri alındı)
   void _loadBannerAd() {
     _bannerAd = AdManager.createBannerAd(
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          setState(() {
-            _isBannerLoaded = true;
-          });
+          if (mounted) {
+            setState(() {
+              _isBannerLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('Banner Yüklenemedi: $error');
@@ -129,7 +128,7 @@ class _LevelMapPageState extends State<LevelMapPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "YOLCULUK",
+          "start_journey".tr().toUpperCase(),
           style: TextStyle(
             color: theme.colorScheme.primary,
             fontSize: 18,
@@ -251,9 +250,9 @@ class _LevelMapPageState extends State<LevelMapPage> {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text(
-                              "Önce önceki bölümleri tamamlamalısın!",
-                              style: TextStyle(
+                            content: Text(
+                              "complete_previous_levels_first".tr(),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -317,15 +316,11 @@ class _LevelMapPageState extends State<LevelMapPage> {
                   size: 14,
                   color: isEarned
                       ? const Color(0xFFFFD54F)
-                      : theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
-                        ), // DEPRECATED DÜZELTİLDİ
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   shadows: isEarned
                       ? [
                           BoxShadow(
-                            color: const Color(
-                              0xFFFFD54F,
-                            ).withValues(alpha: 0.5), // DEPRECATED DÜZELTİLDİ
+                            color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
                             blurRadius: 4,
                           ),
                         ]
@@ -356,34 +351,28 @@ class _LevelMapPageState extends State<LevelMapPage> {
         border: isLocked
             ? null
             : Border.all(
-                color: theme.colorScheme.onSurface.withValues(
-                  alpha: 0.1,
-                ), // DEPRECATED DÜZELTİLDİ
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                 width: 2,
               ),
         boxShadow: isLocked
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: 0.04,
-                  ), // DEPRECATED DÜZELTİLDİ
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
               ],
       ),
       child: Text(
-        "Seviye $level",
+        "${"level".tr()} $level",
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w900,
           color: isCurrent
               ? theme.scaffoldBackgroundColor
               : (isLocked
-                    ? theme.colorScheme.onSurface.withValues(
-                        alpha: isDark ? 0.3 : 0.5, // DEPRECATED DÜZELTİLDİ
-                      )
+                    ? theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.3 : 0.5)
                     : theme.colorScheme.primary),
         ),
       ),
@@ -403,7 +392,7 @@ class _LevelMapPageState extends State<LevelMapPage> {
         border: Border.all(color: theme.colorScheme.surface, width: 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1), // DEPRECATED DÜZELTİLDİ
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -412,9 +401,7 @@ class _LevelMapPageState extends State<LevelMapPage> {
       child: Icon(
         isLocked ? Icons.lock_rounded : Icons.check_rounded,
         color: isLocked
-            ? theme.colorScheme.onSurface.withValues(
-                alpha: isDark ? 0.4 : 0.4,
-              ) // DEPRECATED DÜZELTİLDİ
+            ? theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.4 : 0.4)
             : theme.scaffoldBackgroundColor,
         size: 24,
       ),
@@ -438,9 +425,7 @@ class _LevelMapPageState extends State<LevelMapPage> {
               border: Border.all(color: Colors.white, width: 4),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(
-                    0xFFFFD54F,
-                  ).withValues(alpha: 0.5), // DEPRECATED DÜZELTİLDİ
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
                   blurRadius: 20,
                   spreadRadius: 4,
                 ),
@@ -454,7 +439,6 @@ class _LevelMapPageState extends State<LevelMapPage> {
           ),
         );
       },
-      onEnd: () {},
     );
   }
 }

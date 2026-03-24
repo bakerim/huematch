@@ -103,12 +103,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<int> _nearMissIndices = [];
   List<int> get nearMissIndices => _nearMissIndices;
 
-  // ==========================================================
-  // 🔥 FPS DOSTU (SIFIR GECİKME) SES VE TİTREŞİM MİMARİSİ
-  // ==========================================================
   final AudioPlayer _bgmPlayer = AudioPlayer();
-
-  // 🔥 DEĞİŞİM 1: Her ses için RAM'de hazır bekleyen bir oynatıcı haritası!
   final Map<String, AudioPlayer> _sfxPlayers = {};
 
   int _lastVibrateTime = 0;
@@ -122,14 +117,10 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
         usageType: AndroidUsageType.game,
         audioFocus: AndroidAudioFocus.none,
       ),
-      iOS: AudioContextIOS(
-        category: AVAudioSessionCategory.ambient,
-        options: const {AVAudioSessionOptions.mixWithOthers},
-      ),
+      iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
     );
     await AudioPlayer.global.setAudioContext(audioContext);
 
-    // 🔥 DEĞİŞİM 2: Oyun açılırken bütün sesleri HARDDİSK'ten RAM'e çekiyoruz!
     final sounds = [
       'card_flip.mp3',
       'correct_match.mp3',
@@ -143,20 +134,16 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     for (String s in sounds) {
       final player = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-      // Yerel dosyayı AssetSource olarak player'a "Önceden" bağlıyoruz
       await player.setSource(AssetSource('sounds/$s'));
       _sfxPlayers[s] = player;
     }
   }
 
-  // 🔥 DEĞİŞİM 3: Sıfır gecikmeli SFX oynatma.
   void _playSfx(String path) {
     if (!_isSfxEnabled) return;
 
     final player = _sfxPlayers[path];
     if (player != null) {
-      // Dosya zaten RAM'de yüklü!
-      // Eğer o an çalıyorsa, saniyesinde başa sar. Çalmıyorsa başlat.
       if (player.state == PlayerState.playing) {
         player.seek(Duration.zero);
       } else {
@@ -165,7 +152,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  // Titreşim kalkanı FPS'i korumak için 80ms ile sınırlandırıldı
   void _safeVibrate(int type) {
     if (!_isVibrationEnabled) return;
 
@@ -175,12 +161,13 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     if (type == 1) {
       HapticFeedback.lightImpact();
-    } else if (type == 2)
+    } else if (type == 2) {
       HapticFeedback.mediumImpact();
-    else if (type == 3)
+    } else if (type == 3) {
       HapticFeedback.heavyImpact();
-    else
+    } else {
       HapticFeedback.vibrate();
+    }
   }
 
   void playButtonClickSound() {
@@ -203,13 +190,22 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
       _bgmPlayer.pause();
+
+      // Kalkan: Uygulama arka plana düşerse süreyi dondur
+      if (!_isManuallyPaused && !_isGameOver && !_isTimeUp && !_isLocked) {
+        _gameTimer?.cancel();
+      }
     } else if (state == AppLifecycleState.resumed) {
       if (_isMusicEnabled && !_isManuallyPaused) {
         _bgmPlayer.resume();
       }
+
+      // Kalkan: Geri dönüldüğünde süre kaldığı yerden aksın
+      if (!_isManuallyPaused && !_isGameOver && !_isTimeUp && !_isLocked) {
+        _startCountdown();
+      }
     }
   }
-  // ==========================================================
 
   int getStarsForLevel(int level) {
     return _levelStars[level.toString()] ?? 0;
@@ -323,6 +319,9 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _startCountdown() {
+    // Hayalet Avcısı: Eski sayacı öldürmeden yenisini başlatma
+    _gameTimer?.cancel();
+
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeLeft > 0) {
         _timeLeft--;
@@ -364,44 +363,59 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
+  void _executeHintLogic() {
+    _closeMismatchCards();
+
+    int firstIndex = _cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
+    if (firstIndex != -1) {
+      int secondIndex = _cards.indexWhere(
+        (c) =>
+            !c.isMatched &&
+            c.id != _cards[firstIndex].id &&
+            c.color == _cards[firstIndex].color &&
+            c.icon == _cards[firstIndex].icon,
+      );
+
+      if (secondIndex != -1) {
+        _safeVibrate(2);
+        _playSfx('correct_match.mp3');
+
+        _cards[firstIndex].isFlipped = true;
+        _cards[secondIndex].isFlipped = true;
+        _cards[firstIndex].isMatched = true;
+        _cards[secondIndex].isMatched = true;
+        _matchesFound++;
+
+        notifyListeners();
+
+        if (_matchesFound == 10) {
+          _gameOver(failed: false);
+        }
+      }
+    }
+  }
+
   void useHint(VoidCallback onShowAd) {
     if (_isLocked || _isGameOver || _isTimeUp) return;
 
     if (_hintCount > 0) {
       _hintCount--;
       _saveData();
-
-      _closeMismatchCards();
-
-      int firstIndex = _cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
-      if (firstIndex != -1) {
-        int secondIndex = _cards.indexWhere(
-          (c) =>
-              !c.isMatched &&
-              c.id != _cards[firstIndex].id &&
-              c.color == _cards[firstIndex].color &&
-              c.icon == _cards[firstIndex].icon,
-        );
-
-        if (secondIndex != -1) {
-          _safeVibrate(2);
-          _playSfx('correct_match.mp3');
-
-          _cards[firstIndex].isFlipped = true;
-          _cards[secondIndex].isFlipped = true;
-          _cards[firstIndex].isMatched = true;
-          _cards[secondIndex].isMatched = true;
-          _matchesFound++;
-
-          notifyListeners();
-
-          if (_matchesFound == 10) {
-            _gameOver(failed: false);
-          }
-        }
-      }
+      _executeHintLogic();
     } else {
+      pauseGame();
       onShowAd();
+    }
+  }
+
+  void onAdHintSuccess() {
+    resumeGame();
+    _executeHintLogic();
+  }
+
+  void onAdHintClosed() {
+    if (_isManuallyPaused) {
+      resumeGame();
     }
   }
 
@@ -411,21 +425,45 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  // =====================================================================
+  // 🔥 İŞTE ÇÖZÜM: ELEKTROŞOK PROTOKOLÜ (Tam Diriltme Garantili)
+  // =====================================================================
   void addExtraTime(int seconds) {
+    // 1. Önce olası bütün eski sayaçları ve tetikleyicileri acımasızca yok ediyoruz!
+    _gameTimer?.cancel();
+    _delayedGameOverTimer?.cancel();
+    _mismatchTimer?.cancel();
+
+    // 2. Hastayı hayata döndürüyoruz!
     _timeLeft += seconds;
     _isTimeUp = false;
     _isGameOver = false;
     _isLocked = false;
+    _isManuallyPaused = false; // Sistem pauzda kalmasın
 
+    // Oyun bitti diye istatistiği artırmıştık, hakkı yemesin diye geri alıyoruz
+    _gamesPlayed = max(0, _gamesPlayed - 1);
+
+    _closeMismatchCards();
+
+    // Yarım kalan (near miss) animasyon kartlarını çeviriyoruz
     for (int index in _nearMissIndices) {
-      if (!_cards[index].isMatched) {
+      if (index >= 0 && index < _cards.length && !_cards[index].isMatched) {
         _cards[index].isFlipped = false;
       }
     }
     _nearMissIndices.clear();
 
-    _startCountdown();
-    notifyListeners();
+    if (_isMusicEnabled) {
+      _bgmPlayer.resume();
+    }
+
+    // 3. Altın vuruş: Arayüzün (UI) bu dirilişi anında algılaması için
+    // Future.microtask kullanarak kodun UI güncellemesini beklemesini sağlıyoruz.
+    Future.microtask(() {
+      _startCountdown();
+      notifyListeners(); // Bu çağrı o Time's Up ekranını toz eder!
+    });
   }
 
   void playSpecificLevel(int level) {
@@ -448,27 +486,27 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     List<Map<String, dynamic>> pool = [];
     int uniqueVariety = 4;
 
-    final Color cYellow = const Color(0xFFFFD54F);
-    final Color cBlue = const Color(0xFF42A5F5);
-    final Color cGreen = const Color(0xFF66BB6A);
-    final Color cRed = const Color(0xFFEF5350);
-    final Color cPurple = const Color(0xFFAB47BC);
-    final Color cOrange = const Color(0xFFFF9800);
-    final Color cPink = const Color(0xFFEC407A);
-    final Color cCyan = const Color(0xFF26C6DA);
-    final Color cLime = const Color(0xFFD4E157);
-    final Color cDarkBlue = const Color(0xFF1565C0);
+    const Color cYellow = Color(0xFFFFD54F);
+    const Color cBlue = Color(0xFF42A5F5);
+    const Color cGreen = Color(0xFF66BB6A);
+    const Color cRed = Color(0xFFEF5350);
+    const Color cPurple = Color(0xFFAB47BC);
+    const Color cOrange = Color(0xFFFF9800);
+    const Color cPink = Color(0xFFEC407A);
+    const Color cCyan = Color(0xFF26C6DA);
+    const Color cLime = Color(0xFFD4E157);
+    const Color cDarkBlue = Color(0xFF1565C0);
 
-    final IconData iSquare = Icons.square_rounded;
-    final IconData iCircle = Icons.circle;
-    final IconData iTriangle = Icons.change_history_rounded;
-    final IconData iHexagon = Icons.hexagon_rounded;
-    final IconData iStar = Icons.star_rounded;
-    final IconData iDiamond = Icons.diamond_rounded;
-    final IconData iShield = Icons.shield_rounded;
-    final IconData iHeart = Icons.favorite_rounded;
-    final IconData iPentagon = Icons.pentagon_rounded;
-    final IconData iHollowCircle = Icons.radio_button_unchecked_rounded;
+    const IconData iSquare = Icons.square_rounded;
+    const IconData iCircle = Icons.circle;
+    const IconData iTriangle = Icons.change_history_rounded;
+    const IconData iHexagon = Icons.hexagon_rounded;
+    const IconData iStar = Icons.star_rounded;
+    const IconData iDiamond = Icons.diamond_rounded;
+    const IconData iShield = Icons.shield_rounded;
+    const IconData iHeart = Icons.favorite_rounded;
+    const IconData iPentagon = Icons.pentagon_rounded;
+    const IconData iHollowCircle = Icons.radio_button_unchecked_rounded;
 
     if (_currentLevel <= 15) {
       pool = [
@@ -751,7 +789,7 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
         inAppReview.requestReview();
       }
     } catch (e) {
-      debugPrint("Yıldız avı sırasında pürüz: $e");
+      debugPrint("Review Error: $e");
     }
   }
 
@@ -875,8 +913,6 @@ class GameProvider extends ChangeNotifier with WidgetsBindingObserver {
     _delayedGameOverTimer?.cancel();
     _memorizeTimer?.cancel();
     _mismatchTimer?.cancel();
-
-    // RAM'e yüklediğimiz sesleri temizliyoruz
     for (var player in _sfxPlayers.values) {
       player.dispose();
     }

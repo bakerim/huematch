@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
 
@@ -17,7 +18,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
   int _gameState = 0;
   int? _selectedIndex;
 
-  // 🔥 BUG FIX: Kart sayısı 12'den 9'a düşürüldü ki ekrana sığsın!
   final List<int> _originalRewards = [0, 0, 2, 2, 5, 5, 10, 10, 15];
   late List<int> _currentRewards;
   late List<int> _shuffledPositions;
@@ -151,7 +151,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  isEmpty ? "ŞANSSIZLIK!" : "+$amount ALTIN",
+                  isEmpty ? "bad_luck".tr() : "+$amount ${"coins".tr().toUpperCase()}",
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
@@ -162,8 +162,8 @@ class _DailySpinPageState extends State<DailySpinPage> {
                 const SizedBox(height: 12),
                 Text(
                   isEmpty
-                      ? "Bu kart boş çıktı. Bir sonrakine bol şans!"
-                      : "Harika bir seçim! Altınlar cüzdanına eklendi.",
+                      ? "unlucky_card_empty".tr()
+                      : "great_choice_coins_added".tr(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -185,9 +185,9 @@ class _DailySpinPageState extends State<DailySpinPage> {
                       ),
                       elevation: 5,
                     ),
-                    child: const Text(
-                      "HARİKA",
-                      style: TextStyle(
+                    child: Text(
+                      "awesome".tr().toUpperCase(),
+                      style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
                         letterSpacing: 1.0,
@@ -222,7 +222,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "ŞANSLI KARTLAR",
+          "lucky_cards".tr().toUpperCase(),
           style: TextStyle(
             color: theme.colorScheme.primary,
             fontSize: 18,
@@ -275,14 +275,14 @@ class _DailySpinPageState extends State<DailySpinPage> {
 
             Text(
               _gameState == 0
-                  ? "Şansını denemeye hazır mısın?"
+                  ? "ready_to_try_luck".tr()
                   : _gameState == 1
-                  ? "Ödülleri iyi izle..."
+                  ? "watch_rewards".tr()
                   : _gameState == 2
-                  ? "Kartlar Karışıyor!"
+                  ? "cards_shuffling".tr()
                   : _gameState == 3
-                  ? "Sezgilerine güven ve seç!"
-                  : "İşte kazancın!",
+                  ? "trust_intuition".tr()
+                  : "here_is_your_win".tr(),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -294,26 +294,21 @@ class _DailySpinPageState extends State<DailySpinPage> {
             ),
             const SizedBox(height: 24),
 
-            // 🔥 BUG FIX: 3x3 Kusursuz Oturan Matris
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final double spacing = 12.0;
-
-                    // Ekran yüksekliğine göre kart boyunu kısıtla ki alta taşmasın
                     double cardHeight =
                         (constraints.maxHeight - (spacing * 2)) / 3;
-                    double cardWidth = cardHeight * 0.8; // Kart oranı
+                    double cardWidth = cardHeight * 0.8;
 
-                    // Eğer genişlik yetmezse genişliğe göre daralt
                     if (cardWidth * 3 + spacing * 2 > constraints.maxWidth) {
                       cardWidth = (constraints.maxWidth - (spacing * 2)) / 3;
                       cardHeight = cardWidth / 0.8;
                     }
 
-                    // Merkeze hizalamak için kalan boşluğu hesapla
                     final double gridTotalWidth =
                         (cardWidth * 3) + (spacing * 2);
                     final double gridTotalHeight =
@@ -378,7 +373,6 @@ class _DailySpinPageState extends State<DailySpinPage> {
               ),
             ),
 
-            // --- AKSİYON BUTONLARI ---
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 32.0,
@@ -401,14 +395,14 @@ class _DailySpinPageState extends State<DailySpinPage> {
                                 shadowColor: theme.colorScheme.primary
                                     .withValues(alpha: 0.2),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.auto_awesome_rounded, size: 28),
-                                  SizedBox(width: 12),
+                                  const Icon(Icons.auto_awesome_rounded, size: 28),
+                                  const SizedBox(width: 12),
                                   Text(
-                                    "ÜCRETSİZ DAĞIT",
-                                    style: TextStyle(
+                                    "free_shuffle".tr().toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1.0,
@@ -440,17 +434,17 @@ class _DailySpinPageState extends State<DailySpinPage> {
                                 shadowColor: theme.colorScheme.secondary
                                     .withValues(alpha: 0.3),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.play_circle_fill_rounded,
                                     size: 28,
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
-                                    "REKLAM İZLE & DAĞIT",
-                                    style: TextStyle(
+                                    "watch_ad_shuffle".tr().toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -503,7 +497,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
     return Container(
       key: key,
       decoration: BoxDecoration(
-        color: isEmpty ? theme.colorScheme.surface : theme.colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isJackpot
@@ -540,7 +534,7 @@ class _DailySpinPageState extends State<DailySpinPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              isEmpty ? "BOŞ" : "$amount",
+              isEmpty ? "empty".tr().toUpperCase() : "$amount",
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,

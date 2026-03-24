@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
 
@@ -10,6 +11,9 @@ class ShopPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<GameProvider>();
     final theme = Theme.of(context);
+
+    // 🔥 DİL KONTROLÜ: Telefon Türkçeyse true, değilse false
+    final bool isTr = context.locale.languageCode == 'tr';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -24,7 +28,7 @@ class ShopPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "MAĞAZA",
+          "store".tr().toUpperCase(),
           style: TextStyle(
             color: theme.colorScheme.primary,
             fontSize: 18,
@@ -37,7 +41,6 @@ class ShopPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // --- CÜZDAN / BAKİYE KARTI ---
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
@@ -55,7 +58,7 @@ class ShopPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(51),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -64,7 +67,7 @@ class ShopPage extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "MEVCUT BAKİYE",
+                      "current_balance_label".tr().toUpperCase(),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -97,7 +100,6 @@ class ShopPage extends StatelessWidget {
               ),
             ),
 
-            // --- VİDEO İZLE +10 ALTIN KAZAN ---
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
@@ -111,13 +113,7 @@ class ShopPage extends StatelessWidget {
                       provider.addBonusCoins(10);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text(
-                            "Tebrikler! +10 Altın kazandın.",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          content: Text("congrats_earned_coins".tr()),
                           backgroundColor: const Color(0xFF66BB6A),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
@@ -137,22 +133,22 @@ class ShopPage extends StatelessWidget {
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF673AB7).withAlpha(128),
+                      color: const Color(0xFF673AB7).withValues(alpha: 0.5),
                       width: 2,
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.play_circle_fill_rounded,
                         color: Color(0xFF673AB7),
                         size: 24,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        "Video İzle: +10 Altın",
-                        style: TextStyle(
+                        "watch_video_earn_coins".tr(),
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF673AB7),
@@ -169,18 +165,16 @@ class ShopPage extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 children: [
-                  // 🔥 CİNLİK 3.0: KUMBARA (PIGGY BANK) VİTRİNİ
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildPiggyBankCard(context, provider, theme),
+                    child: _buildPiggyBankCard(context, provider, theme, isTr),
                   ),
                   const SizedBox(height: 32),
 
-                  // --- REYON: İPUCU PAKETLERİ (Yeni Eklendi!) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
-                      "Oyun İçi Eşyalar",
+                      "in_game_items".tr(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -198,7 +192,7 @@ class ShopPage extends StatelessWidget {
                             context,
                             provider,
                             theme,
-                            "3 İpucu",
+                            "three_hints".tr(),
                             3,
                             50,
                           ),
@@ -209,7 +203,7 @@ class ShopPage extends StatelessWidget {
                             context,
                             provider,
                             theme,
-                            "10 İpucu",
+                            "ten_hints".tr(),
                             10,
                             120,
                             isPopular: true,
@@ -222,11 +216,10 @@ class ShopPage extends StatelessWidget {
                   const Divider(height: 1, indent: 24, endIndent: 24),
                   const SizedBox(height: 24),
 
-                  // --- REYON: GERÇEK PARAYLA ALTIN SATIN AL (IAP) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
-                      "Altın Satın Al",
+                      "buy_coins".tr(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -236,36 +229,41 @@ class ShopPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 150,
+                    height:
+                        165, // 🔥 Butonlar büyüdüğü için yüksekliği artırdık
                     child: ListView(
                       physics: const BouncingScrollPhysics(),
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       children: [
+                        // 🔥 DİNAMİK FİYAT VE SAHTE İNDİRİM SİSTEMİ
                         _buildCoinPackage(
                           context,
                           provider,
                           theme,
-                          "Başlangıç",
+                          "starter_pack".tr(),
                           500,
-                          "₺29.99",
+                          isTr ? "₺29.99" : "\$0.99",
+                          oldPriceStr: isTr ? "₺59.99" : "\$1.99",
                         ),
                         _buildCoinPackage(
                           context,
                           provider,
                           theme,
-                          "Profesyonel",
+                          "pro_pack".tr(),
                           1500,
-                          "₺79.99",
+                          isTr ? "₺79.99" : "\$2.99",
+                          oldPriceStr: isTr ? "₺159.99" : "\$5.99",
                           isPopular: true,
                         ),
                         _buildCoinPackage(
                           context,
                           provider,
                           theme,
-                          "Tycoon Paketi",
+                          "tycoon_pack".tr(),
                           5000,
-                          "₺199.99",
+                          isTr ? "₺199.99" : "\$7.99",
+                          oldPriceStr: isTr ? "₺399.99" : "\$15.99",
                         ),
                       ],
                     ),
@@ -275,11 +273,10 @@ class ShopPage extends StatelessWidget {
                   const Divider(height: 1, indent: 24, endIndent: 24),
                   const SizedBox(height: 24),
 
-                  // --- REYON: KART TEMALARI (SKINS) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
-                      "Kart Temaları",
+                      "card_themes".tr(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -297,8 +294,8 @@ class ShopPage extends StatelessWidget {
                           context: context,
                           provider: provider,
                           theme: theme,
-                          title: "Klasik Beyaz",
-                          description: "Standart, temiz ve sade.",
+                          title: "classic_white".tr(),
+                          description: "classic_desc".tr(),
                           themeId: 'classic',
                           price: 0,
                           icon: Icons.check_circle_rounded,
@@ -309,8 +306,8 @@ class ShopPage extends StatelessWidget {
                           context: context,
                           provider: provider,
                           theme: theme,
-                          title: "Karanlık Madde",
-                          description: "Göz yormayan derin uzay modu.",
+                          title: "dark_matter".tr(),
+                          description: "dark_matter_desc".tr(),
                           themeId: 'dark_matter',
                           price: 500,
                           icon: Icons.nightlight_round,
@@ -321,8 +318,8 @@ class ShopPage extends StatelessWidget {
                           context: context,
                           provider: provider,
                           theme: theme,
-                          title: "Holografik Neon",
-                          description: "Matris esintili karanlık zemin.",
+                          title: "holographic_neon".tr(),
+                          description: "neon_desc".tr(),
                           themeId: 'neon',
                           price: 1500,
                           icon: Icons.terminal_rounded,
@@ -333,8 +330,8 @@ class ShopPage extends StatelessWidget {
                           context: context,
                           provider: provider,
                           theme: theme,
-                          title: "Royal Gold",
-                          description: "Mat siyah ve altın yaldız.",
+                          title: "royal_gold".tr(),
+                          description: "gold_desc".tr(),
                           themeId: 'gold',
                           price: 5000,
                           icon: Icons.diamond_rounded,
@@ -353,14 +350,17 @@ class ShopPage extends StatelessWidget {
     );
   }
 
-  // 🔥 KUMBARA KARTI TASARIMI
   Widget _buildPiggyBankCard(
     BuildContext context,
     GameProvider provider,
     ThemeData theme,
+    bool isTr, // 🔥 Dil bilgisini buraya aldık
   ) {
     double fillPercentage =
         provider.piggyBankCoins / provider.maxPiggyBankCoins;
+
+    // 🔥 KUMBARA DİNAMİK FİYATI
+    String piggyPrice = isTr ? "₺19.99" : "\$0.99";
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -368,12 +368,12 @@ class ShopPage extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFFFD54F).withAlpha(128),
+          color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFD54F).withAlpha(25),
+            color: const Color(0xFFFFD54F).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -387,7 +387,7 @@ class ShopPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFD54F).withAlpha(51),
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -401,20 +401,20 @@ class ShopPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "ALTIN KUMBARASI",
-                      style: TextStyle(
+                    Text(
+                      "piggy_bank".tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFFFFD54F),
                       ),
                     ),
                     Text(
-                      "Oynadıkça biriken altınlar!",
+                      "piggy_bank_desc".tr(),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary.withAlpha(153),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -427,7 +427,7 @@ class ShopPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Birikim",
+                "savings".tr(),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -448,7 +448,7 @@ class ShopPage extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fillPercentage,
               minHeight: 12,
-              backgroundColor: theme.colorScheme.primary.withAlpha(25),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFFFFD54F),
               ),
@@ -461,15 +461,11 @@ class ShopPage extends StatelessWidget {
             child: ElevatedButton(
               onPressed: provider.piggyBankCoins > 0
                   ? () {
-                      provider
-                          .smashPiggyBank(); // Gerçek uygulamada burada ödeme (IAP) penceresi açılır!
+                      provider.smashPiggyBank();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Kumbara Kırıldı! Altınlar Cüzdana Eklendi.",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          backgroundColor: Color(0xFF66BB6A),
+                        SnackBar(
+                          content: Text("piggy_bank_smashed".tr()),
+                          backgroundColor: const Color(0xFF66BB6A),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -484,8 +480,10 @@ class ShopPage extends StatelessWidget {
               ),
               child: Text(
                 provider.isPiggyBankFull
-                    ? "KUMBARAYI KIR (₺19.99)"
-                    : "ŞİMDİ AL (₺19.99)",
+                    ? "smash_piggy_bank".tr(
+                        args: [piggyPrice],
+                      ) // 🔥 Fiyat Dinamik
+                    : "buy_now".tr(args: [piggyPrice]), // 🔥 Fiyat Dinamik
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -498,7 +496,6 @@ class ShopPage extends StatelessWidget {
     );
   }
 
-  // 🔥 İPUCU SATIN ALMA KARTI
   Widget _buildHintPackage(
     BuildContext context,
     GameProvider provider,
@@ -518,7 +515,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -548,19 +545,19 @@ class ShopPage extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {
                 if (provider.totalCoins >= priceCoin) {
-                  provider.buyCoinPackage(-priceCoin); // Altını düş
-                  provider.addHints(hintAmount); // İpucuyu ver
+                  provider.buyCoinPackage(-priceCoin);
+                  provider.addHints(hintAmount);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("İpuçları eklendi!"),
-                      backgroundColor: Color(0xFF66BB6A),
+                    SnackBar(
+                      content: Text("hints_added".tr()),
+                      backgroundColor: const Color(0xFF66BB6A),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Yetersiz Altın!"),
+                    SnackBar(
+                      content: Text("insufficient_coins".tr()),
                       backgroundColor: Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -568,7 +565,9 @@ class ShopPage extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary.withAlpha(25),
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.1,
+                ),
                 foregroundColor: theme.colorScheme.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -597,8 +596,6 @@ class ShopPage extends StatelessWidget {
     );
   }
 
-  // --- ORİJİNAL ALTIN VE TEMA TASARIMLARI (DOKUNULMADI) ---
-
   Widget _buildCoinPackage(
     BuildContext context,
     GameProvider provider,
@@ -606,6 +603,8 @@ class ShopPage extends StatelessWidget {
     String title,
     int amount,
     String priceStr, {
+    required String
+    oldPriceStr, // 🔥 SAHTE İNDİRİM İÇİN ESKİ FİYAT PARAMETRESİ EKLENDİ
     bool isPopular = false,
   }) {
     return Container(
@@ -619,7 +618,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -663,17 +662,15 @@ class ShopPage extends StatelessWidget {
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,
-                  height: 36,
+                  height: 48, // 🔥 Eski fiyatı sığdırmak için butonu uzattık
                   child: ElevatedButton(
                     onPressed: () {
                       provider.buyCoinPackage(amount);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            "Satın alım başarılı! +$amount Altın eklendi.",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            "purchase_success_coins_added".tr(
+                              namedArgs: {"amount": amount.toString()},
                             ),
                           ),
                           backgroundColor: const Color(0xFF66BB6A),
@@ -690,12 +687,31 @@ class ShopPage extends StatelessWidget {
                       ),
                       padding: EdgeInsets.zero,
                     ),
-                    child: Text(
-                      priceStr,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 🔥 ÜSTÜ ÇİZİLİ ESKİ FİYAT ILLÜZYONU
+                        Text(
+                          oldPriceStr,
+                          style: TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                            decorationThickness: 2.0,
+                            color: theme.scaffoldBackgroundColor.withValues(
+                              alpha: 0.7,
+                            ),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        // 🔥 YENİ CAZİP FİYAT
+                        Text(
+                          priceStr,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -716,10 +732,10 @@ class ShopPage extends StatelessWidget {
                     topRight: Radius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  "EN POPÜLER",
+                child: Text(
+                  "most_popular".tr().toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 8,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -756,7 +772,7 @@ class ShopPage extends StatelessWidget {
             : Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -768,7 +784,7 @@ class ShopPage extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(38),
+              color: iconColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 32),
@@ -832,7 +848,7 @@ class ShopPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          "Kuşanıldı",
+          "equipped".tr(),
           style: TextStyle(
             color: theme.scaffoldBackgroundColor,
             fontWeight: FontWeight.bold,
@@ -853,7 +869,10 @@ class ShopPage extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text("Seç", style: TextStyle(fontWeight: FontWeight.bold)),
+        child: Text(
+          "select".tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       );
     }
     return ElevatedButton(
@@ -861,29 +880,29 @@ class ShopPage extends StatelessWidget {
         bool success = provider.buyTheme(themeId, price);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                "Tema açıldı!",
-                style: TextStyle(
+                "theme_unlocked".tr(),
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              backgroundColor: Color(0xFF66BB6A),
+              backgroundColor: const Color(0xFF66BB6A),
               behavior: SnackBarBehavior.floating,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                "Yetersiz altın! Yukarıdan satın alabilirsin.",
-                style: TextStyle(
+                "insufficient_coins_buy_above".tr(),
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              backgroundColor: Color(0xFFEF5350),
+              backgroundColor: const Color(0xFFEF5350),
               behavior: SnackBarBehavior.floating,
             ),
           );

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../data/providers/game_provider.dart';
 import '../pages/menu_page.dart';
@@ -11,7 +12,7 @@ class PauseDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // DİNAMİK TEMA MOTORU
+    final theme = Theme.of(context);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
@@ -21,11 +22,11 @@ class PauseDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface, // DİNAMİK KART RENGİ
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(51),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 30,
                 offset: const Offset(0, 15),
               )
@@ -37,26 +38,25 @@ class PauseDialog extends StatelessWidget {
               Icon(Icons.pause_circle_filled_rounded, size: 64, color: theme.colorScheme.primary),
               const SizedBox(height: 16),
               Text(
-                "Duraklatıldı",
+                "paused".tr(),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: theme.colorScheme.primary, // DİNAMİK BAŞLIK
+                  color: theme.colorScheme.primary,
                   letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Oyun süren durduruldu.",
+                "game_timer_stopped".tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.primary.withAlpha(128),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 40),
 
-              // 1. BUTON: Devam Et
               SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -66,17 +66,16 @@ class PauseDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary, // TEMA ANA RENGİ
-                    foregroundColor: theme.scaffoldBackgroundColor, // TEMA ZIT RENGİ
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.scaffoldBackgroundColor,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text("Devam Et", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text("resume".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 2. BUTON: Yeniden Başlat
               SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -88,16 +87,15 @@ class PauseDialog extends StatelessWidget {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary, // DİNAMİK ÇİZGİ VE YAZI
-                    side: BorderSide(color: theme.colorScheme.primary.withAlpha(51), width: 2),
+                    foregroundColor: theme.colorScheme.primary,
+                    side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text("Yeniden Başlat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text("restart".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 3. BUTON: Ana Menü
               SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -109,10 +107,10 @@ class PauseDialog extends StatelessWidget {
                     );
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.secondary, // SECONDARY TEMA RENGİ
+                    foregroundColor: theme.colorScheme.secondary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text("Ana Menüye Dön", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  child: Text("main_menu".tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],

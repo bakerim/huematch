@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
@@ -16,9 +17,6 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  // 🔥 BUG FIX: initState içindeki startGame çağrısını sildik!
-  // Çünkü "ResultPage" ve "LevelMapPage" oyunu başlatıp zaten buraya yönlendiriyor.
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -115,7 +113,7 @@ class _GamePageState extends State<GamePage> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -151,7 +149,9 @@ class _GamePageState extends State<GamePage> {
                     boxShadow: isPanic
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFE53935).withOpacity(0.5),
+                              color: const Color(
+                                0xFFE53935,
+                              ).withValues(alpha: 0.5),
                               blurRadius: 15,
                               spreadRadius: 2,
                             ),
@@ -207,7 +207,7 @@ class _GamePageState extends State<GamePage> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -225,7 +225,7 @@ class _GamePageState extends State<GamePage> {
               ),
               const SizedBox(width: 6),
               Text(
-                "DURDUR",
+                "pause".tr().toUpperCase(),
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   color: theme.colorScheme.primary,
@@ -239,6 +239,9 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
+  // =====================================================================
+  // 🔥 GÜNCELLENEN İPUCU BUTONU (BAYRAK MANTIĞI EKLENDİ)
+  // =====================================================================
   Widget _buildHintButton(
     BuildContext context,
     GameProvider provider,
@@ -250,14 +253,27 @@ class _GamePageState extends State<GamePage> {
       borderRadius: BorderRadius.circular(24),
       onTap: () {
         if (provider.isLocked) return;
+
         provider.useHint(() {
+          // Bayrağımızı hazırladık
+          bool isRewardEarned = false;
+
           AdManager.showRewardedAd(
             context: context,
             onRewardEarned: () {
-              provider.addHints(1);
-              provider.useHint(() {});
+              // 1. REKLAM BİTTİ! Sadece bayrağı kaldır. Süreyi ASLA başlatma!
+              isRewardEarned = true;
             },
-            onClosed: () {},
+            onClosed: () {
+              // 2. ADAM (X) ÇARPIYA BASTI VE OYUNA FİZİKSEL OLARAK DÖNDÜ!
+              if (isRewardEarned) {
+                provider
+                    .onAdHintSuccess(); // Ödülü hak ettiyse ver ve süreyi başlat
+              } else {
+                provider
+                    .onAdHintClosed(); // Videoyu yarıda kestiyse ceza yok, sadece oyunu devam ettir
+              }
+            },
           );
         });
       },
@@ -278,7 +294,7 @@ class _GamePageState extends State<GamePage> {
                   (hasFreeHint
                           ? theme.colorScheme.secondary
                           : const Color(0xFFE53935))
-                      .withOpacity(0.4),
+                      .withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -296,7 +312,9 @@ class _GamePageState extends State<GamePage> {
               ),
               const SizedBox(width: 6),
               Text(
-                hasFreeHint ? "İPUCU (${provider.hintCount})" : "İPUCU (İZLE)",
+                hasFreeHint
+                    ? "${"hint".tr()} (${provider.hintCount})"
+                    : "hint_watch".tr(),
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
@@ -348,7 +366,7 @@ class _GamePageState extends State<GamePage> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
         child: Container(
-          color: theme.scaffoldBackgroundColor.withOpacity(0.7),
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
           child: Center(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 32),
@@ -358,7 +376,7 @@ class _GamePageState extends State<GamePage> {
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 30,
                     offset: const Offset(0, 15),
                   ),
@@ -374,7 +392,7 @@ class _GamePageState extends State<GamePage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "SÜRE BİTTİ!",
+                    "time_up".tr().toUpperCase(),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
@@ -384,12 +402,12 @@ class _GamePageState extends State<GamePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "Çok yaklaşmıştın! Bölümü geçmek için ekstra zamana ihtiyacın var.",
+                    "you_are_close".tr(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary.withOpacity(0.6),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -399,12 +417,21 @@ class _GamePageState extends State<GamePage> {
                     height: 64,
                     child: ElevatedButton(
                       onPressed: () {
+                        // 🔥 İŞTE ÇÖZÜM: SÜRE BİTİMİ İÇİN BAYRAK MANTIĞI
+                        bool isRewardEarned = false;
+
                         AdManager.showRewardedAd(
                           context: context,
                           onRewardEarned: () {
-                            provider.addExtraTime(15);
+                            // 1. REKLAM BİTTİ. Bayrağı kaldır.
+                            isRewardEarned = true;
                           },
-                          onClosed: () {},
+                          onClosed: () {
+                            // 2. ÇARPIYA BASILDI. Bayrak havadaysa süreyi çak!
+                            if (isRewardEarned) {
+                              provider.addExtraTime(15);
+                            }
+                          },
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -414,16 +441,18 @@ class _GamePageState extends State<GamePage> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         elevation: 10,
-                        shadowColor: theme.colorScheme.primary.withOpacity(0.3),
+                        shadowColor: theme.colorScheme.primary.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.play_circle_fill_rounded, size: 28),
-                          SizedBox(width: 12),
+                          const Icon(Icons.play_circle_fill_rounded, size: 28),
+                          const SizedBox(width: 12),
                           Text(
-                            "+15 Saniye Kazan",
-                            style: TextStyle(
+                            "get_extra_time".tr(),
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
@@ -446,13 +475,13 @@ class _GamePageState extends State<GamePage> {
                         );
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.primary.withOpacity(
-                          0.5,
+                        foregroundColor: theme.colorScheme.primary.withValues(
+                          alpha: 0.5,
                         ),
                       ),
-                      child: const Text(
-                        "Pes Et ve Çık",
-                        style: TextStyle(
+                      child: Text(
+                        "give_up_and_exit".tr(),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

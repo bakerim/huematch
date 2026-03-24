@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; // 🔥 YENİ DİL MOTORU
 
 import 'data/providers/game_provider.dart';
 import 'data/services/ad_manager.dart';
@@ -11,6 +12,9 @@ import 'ui/pages/menu_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 🔥 ÇOKLU DİL MOTORUNU BAŞLAT
+  await EasyLocalization.ensureInitialized();
+
   // 1. ZEKİ BİLDİRİM MOTORUNU BAŞLAT
   await NotificationService().init();
 
@@ -18,8 +22,11 @@ void main() async {
   await MobileAds.instance.initialize();
 
   // 3. GARANTİCİ HAMLE: Google'a Test Modunda olduğumuzu bildiriyoruz
-  RequestConfiguration configuration = RequestConfiguration(testDeviceIds: []);
-  MobileAds.instance.updateRequestConfiguration(configuration);
+  // This helps prevent 403 errors on emulators by explicitly stating this is a test environment
+  RequestConfiguration configuration = RequestConfiguration(
+    testDeviceIds: [], // We leave this empty, but setting the configuration object helps
+  );
+  await MobileAds.instance.updateRequestConfiguration(configuration);
 
   // 4. 🔥 REKLAMLARI ÖNCEDEN CEPHANEYE YÜKLE (Açılış reklamı eklendi!)
   AdManager.loadAppOpenAd(); // Sinsi açılış reklamı
@@ -31,7 +38,18 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]).then((_) {
-    runApp(const HueMatchApp());
+    runApp(
+      // 🔥 6. UYGULAMAYI DİL KALKANIYLA SARIYORUZ
+      EasyLocalization(
+        supportedLocales: const [
+          Locale('en'),
+          Locale('tr'),
+        ], // Desteklenen Diller
+        path: 'assets/translations', // Çeviri Dosyalarının Yolu
+        fallbackLocale: const Locale('en'), // Hata olursa İngilizce aç
+        child: const HueMatchApp(),
+      ),
+    );
   });
 }
 
@@ -77,6 +95,16 @@ class _HueMatchAppState extends State<HueMatchApp> with WidgetsBindingObserver {
           return MaterialApp(
             title: 'HueMatch',
             debugShowCheckedModeBanner: false,
+
+            // =================================================================
+            // 🔥 ÇOKLU DİL SİSTEMİ ENTEGRASYONU
+            // =================================================================
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale:
+                context.locale, // Cihazın sistem diline göre otomatik ayarlar
+
+            // =================================================================
             theme: _buildTheme(currentTheme),
             home: const MenuPage(),
           );

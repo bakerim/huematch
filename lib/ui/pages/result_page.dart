@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../data/providers/game_provider.dart';
 import '../../data/services/ad_manager.dart';
@@ -23,9 +24,6 @@ class _ResultPageState extends State<ResultPage>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  // 🔥 YENİ: SNAPSHOT (ANLIK GÖRÜNTÜ) DEĞİŞKENLERİ
-  // Sayfa açıldığında değerleri kilitliyoruz ki "Tekrar Dene" ye basınca
-  // arkadaki skorlar sıfırlanırken ekran bir anlığına KAZANDIN tasarımına geçmesin!
   late bool _isFailed;
   late int _stars;
   late int _levelScore;
@@ -36,7 +34,6 @@ class _ResultPageState extends State<ResultPage>
   void initState() {
     super.initState();
 
-    // Değerleri sadece 1 KERE alıp donduruyoruz.
     final provider = context.read<GameProvider>();
     _isFailed = provider.isTimeUp;
     _stars = _isFailed ? 0 : provider.calculateStars();
@@ -79,7 +76,6 @@ class _ResultPageState extends State<ResultPage>
 
   @override
   Widget build(BuildContext context) {
-    // Sadece butonların durumunu güncellemek için hala watch kullanıyoruz
     final gameProvider = context.watch<GameProvider>();
     final theme = Theme.of(context);
 
@@ -100,8 +96,8 @@ class _ResultPageState extends State<ResultPage>
                     children: [
                       Text(
                         _isFailed
-                            ? "SÜRE DOLDU"
-                            : "LEVEL $_currentLevel TAMAMLANDI",
+                            ? "time_up".tr()
+                            : "${"level".tr()} $_currentLevel ${"completed".tr()}",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -113,7 +109,7 @@ class _ResultPageState extends State<ResultPage>
                       ),
                       const SizedBox(height: 8),
 
-                      _buildHeader(_stars, _isFailed, theme),
+                      _buildHeader(_stars, _isFailed),
                       const SizedBox(height: 32),
 
                       _buildStars(_stars, _isFailed),
@@ -123,7 +119,7 @@ class _ResultPageState extends State<ResultPage>
                         children: [
                           Expanded(
                             child: _buildStatCard(
-                              "BÖLÜM PUANI",
+                              "level_score".tr(),
                               "+$_levelScore",
                               theme.colorScheme.primary,
                               theme,
@@ -132,7 +128,7 @@ class _ResultPageState extends State<ResultPage>
                           const SizedBox(width: 16),
                           Expanded(
                             child: _buildStatCard(
-                              "KAZANILAN",
+                              "earned".tr(),
                               "+$_earnedCoins",
                               const Color(0xFFFFD54F),
                               theme,
@@ -156,11 +152,11 @@ class _ResultPageState extends State<ResultPage>
                           ),
 
                         if (gameProvider.isDoubleCoinClaimed)
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 24.0),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 24.0),
                             child: Text(
-                              "Altınlar İkiye Katlandı! 🎉",
-                              style: TextStyle(
+                              "coins_doubled".tr(),
+                              style: const TextStyle(
                                 color: Color(0xFF66BB6A),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -214,7 +210,7 @@ class _ResultPageState extends State<ResultPage>
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFD54F).withOpacity(0.5),
+              color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -225,6 +221,7 @@ class _ResultPageState extends State<ResultPage>
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
+              provider.playButtonClickSound();
               AdManager.showRewardedAd(
                 context: context,
                 onRewardEarned: () {
@@ -246,18 +243,18 @@ class _ResultPageState extends State<ResultPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "ALTINLARI İKİYE KATLA!",
-                      style: TextStyle(
+                    Text(
+                      "double_coins".tr(),
+                      style: const TextStyle(
                         color: Colors.black87,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     Text(
-                      "Bedava +$amount Altın Al",
+                      "${"get_free_coins".tr()} +$amount",
                       style: TextStyle(
-                        color: Colors.black87.withOpacity(0.7),
+                        color: Colors.black87.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -284,6 +281,7 @@ class _ResultPageState extends State<ResultPage>
           height: 64,
           child: ElevatedButton(
             onPressed: () {
+              provider.playButtonClickSound();
               provider.restartGame();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const GamePage()),
@@ -296,9 +294,9 @@ class _ResultPageState extends State<ResultPage>
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text(
-              "TEKRAR DENE",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            child: Text(
+              "retry".tr().toUpperCase(),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
           ),
         ),
@@ -308,6 +306,7 @@ class _ResultPageState extends State<ResultPage>
           height: 64,
           child: TextButton(
             onPressed: () {
+              provider.playButtonClickSound();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const MenuPage()),
                 (route) => false,
@@ -317,9 +316,9 @@ class _ResultPageState extends State<ResultPage>
               );
             },
             child: Text(
-              "Haritaya Dön",
+              "back_to_map".tr(),
               style: TextStyle(
-                color: theme.colorScheme.primary.withOpacity(0.6),
+                color: theme.colorScheme.primary.withValues(alpha: 0.6),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -330,18 +329,19 @@ class _ResultPageState extends State<ResultPage>
     );
   }
 
-  Widget _buildHeader(int stars, bool isFailed, ThemeData theme) {
-    String title = "Harika İş!";
+  Widget _buildHeader(int stars, bool isFailed) {
+    final theme = Theme.of(context);
+    String title = "great_job".tr();
     if (isFailed) {
-      title = "Başarısız!";
+      title = "failed".tr();
     } else if (stars == 3) {
-      title = "Kusursuz!";
+      title = "perfect".tr();
     } else if (stars == 0) {
-      title = "Zar Zor Bitti...";
+      title = "barely_finished".tr();
     }
 
     return Text(
-      title,
+      title.toUpperCase(),
       style: TextStyle(
         fontSize: 36,
         fontWeight: FontWeight.w900,
@@ -351,6 +351,7 @@ class _ResultPageState extends State<ResultPage>
   }
 
   Widget _buildStars(int earnedStars, bool isFailed) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (index) {
@@ -374,11 +375,11 @@ class _ResultPageState extends State<ResultPage>
                   size: size,
                   color: isEarned
                       ? const Color(0xFFFFD54F)
-                      : Colors.grey.withOpacity(0.3),
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   shadows: isEarned
                       ? [
                           BoxShadow(
-                            color: const Color(0xFFFFD54F).withOpacity(0.5),
+                            color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
                             blurRadius: 15,
                           ),
                         ]
@@ -406,7 +407,7 @@ class _ResultPageState extends State<ResultPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -458,6 +459,7 @@ class _ResultPageState extends State<ResultPage>
           height: 64,
           child: ElevatedButton(
             onPressed: () {
+              provider.playButtonClickSound();
               provider.nextLevel();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const GamePage()),
@@ -468,22 +470,25 @@ class _ResultPageState extends State<ResultPage>
               foregroundColor: theme.colorScheme.primary,
               elevation: 0,
               side: BorderSide(
-                color: theme.colorScheme.primary.withOpacity(0.2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "Sıradaki Seviye",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  "next_level".tr().toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                SizedBox(width: 12),
-                Icon(Icons.arrow_forward_rounded, size: 28),
+                const SizedBox(width: 12),
+                const Icon(Icons.arrow_forward_rounded, size: 28),
               ],
             ),
           ),
@@ -495,6 +500,7 @@ class _ResultPageState extends State<ResultPage>
           height: 64,
           child: TextButton(
             onPressed: () {
+              provider.playButtonClickSound();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const MenuPage()),
                 (route) => false,
@@ -504,14 +510,14 @@ class _ResultPageState extends State<ResultPage>
               );
             },
             style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.primary.withOpacity(0.5),
+              foregroundColor: theme.colorScheme.primary.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text(
-              "Haritaya Dön",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            child: Text(
+              "back_to_map".tr(),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ),

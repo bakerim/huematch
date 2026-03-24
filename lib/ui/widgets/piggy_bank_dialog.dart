@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart'; // 🔥 DİL MOTORU EKLENDİ
 import '../../data/providers/game_provider.dart';
 
 class PiggyBankDialog extends StatelessWidget {
@@ -10,7 +11,6 @@ class PiggyBankDialog extends StatelessWidget {
     final provider = context.watch<GameProvider>();
     final theme = Theme.of(context);
 
-    // Yüzde kaçı dolmuş hesaplıyoruz (Bar için)
     double fillPercentage =
         provider.piggyBankCoins / provider.maxPiggyBankCoins;
 
@@ -33,7 +33,6 @@ class PiggyBankDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Kumbara İkonu (Parlak ve davetkâr)
             Stack(
               alignment: Alignment.center,
               children: [
@@ -55,7 +54,7 @@ class PiggyBankDialog extends StatelessWidget {
             const SizedBox(height: 16),
 
             Text(
-              "KUMBARAN",
+              "piggy_bank".tr().toUpperCase(),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -65,7 +64,7 @@ class PiggyBankDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Oynadıkça biriken altınlarını inanılmaz bir indirimle hemen al!",
+              "piggy_bank_offer_desc".tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -75,12 +74,11 @@ class PiggyBankDialog extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Birikim Barı
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Birikim",
+                  "savings".tr(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -101,9 +99,7 @@ class PiggyBankDialog extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: fillPercentage,
                 minHeight: 12,
-                backgroundColor: theme.colorScheme.primary.withValues(
-                  alpha: 0.1,
-                ),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   Color(0xFFFFD54F),
                 ),
@@ -111,14 +107,13 @@ class PiggyBankDialog extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Kırma Butonu
             SizedBox(
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
                 onPressed: provider.piggyBankCoins > 0
                     ? () {
-                        provider.smashPiggyBank(); // ALTINLARI CÜZDANA AKTAR
+                        provider.smashPiggyBank(); 
                         Navigator.of(context).pop();
                       }
                     : null,
@@ -132,8 +127,8 @@ class PiggyBankDialog extends StatelessWidget {
                 ),
                 child: Text(
                   provider.isPiggyBankFull
-                      ? "KUMBARAYI KIR (\$0.99)"
-                      : "ŞİMDİ AL (\$0.99)",
+                      ? "smash_piggy_bank".tr(args: ["\$0.99"])
+                      : "buy_now".tr(args: ["\$0.99"]),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -146,7 +141,7 @@ class PiggyBankDialog extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                "Daha Sonra",
+                "later".tr(),
                 style: TextStyle(
                   color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   fontWeight: FontWeight.bold,

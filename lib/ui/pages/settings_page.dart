@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
+
 import '../../data/providers/game_provider.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  // --- GİZLİLİK POLİTİKASI LİNKİNİ AÇMA FONKSİYONU ---
   Future<void> _launchPrivacyPolicy() async {
     final Uri url = Uri.parse('https://bilbuz.com/huematch-privacy-policy/');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
@@ -31,12 +32,12 @@ class SettingsPage extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
           onPressed: () {
-            provider.playButtonClickSound(); // Çıkışta ses çal
+            provider.playButtonClickSound();
             Navigator.of(context).pop();
           },
         ),
         title: Text(
-          "AYARLAR",
+          "settings".tr(),
           style: TextStyle(
             color: theme.colorScheme.primary,
             fontSize: 18,
@@ -54,7 +55,7 @@ class SettingsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Oyun Deneyimi",
+                "game_experience".tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -81,7 +82,7 @@ class SettingsPage extends StatelessWidget {
                       theme: theme,
                       icon: Icons.vibration_rounded,
                       iconColor: const Color(0xFFFFA726),
-                      title: "Titreşim (Haptic)",
+                      title: "vibration".tr(),
                       value: provider.isVibrationEnabled,
                       onChanged: (val) {
                         provider.playButtonClickSound();
@@ -93,12 +94,11 @@ class SettingsPage extends StatelessWidget {
                       color: theme.colorScheme.primary.withValues(alpha: 0.05),
                       indent: 60,
                     ),
-                    // 🔥 YENİ: Ses Efektleri (SFX) Butonu
                     _buildSwitchTile(
                       theme: theme,
                       icon: Icons.volume_up_rounded,
                       iconColor: const Color(0xFF42A5F5),
-                      title: "Ses Efektleri (SFX)",
+                      title: "sfx".tr(),
                       value: provider.isSfxEnabled,
                       onChanged: (val) {
                         provider.playButtonClickSound();
@@ -110,12 +110,11 @@ class SettingsPage extends StatelessWidget {
                       color: theme.colorScheme.primary.withValues(alpha: 0.05),
                       indent: 60,
                     ),
-                    // 🔥 YENİ: Arka Plan Müziği (BGM) Butonu
                     _buildSwitchTile(
                       theme: theme,
                       icon: Icons.music_note_rounded,
-                      iconColor: const Color(0xFFEC407A), // Pembe hoş bir renk
-                      title: "Arka Plan Müziği",
+                      iconColor: const Color(0xFFEC407A),
+                      title: "bgm".tr(),
                       value: provider.isMusicEnabled,
                       onChanged: (val) {
                         provider.playButtonClickSound();
@@ -126,10 +125,60 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
+
+              // 🔥 YENİ: DİL SEÇİM ALANI
+              Text(
+                "language".tr(),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildLanguageTile(
+                      context: context,
+                      theme: theme,
+                      title: "turkish".tr(),
+                      locale: const Locale('tr'),
+                      isSelected: context.locale == const Locale('tr'),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                      indent: 60,
+                    ),
+                    _buildLanguageTile(
+                      context: context,
+                      theme: theme,
+                      title: "english".tr(),
+                      locale: const Locale('en'),
+                      isSelected: context.locale == const Locale('en'),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
 
               Text(
-                "Destek & Hakkında",
+                "support_about".tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -156,10 +205,10 @@ class SettingsPage extends StatelessWidget {
                       theme: theme,
                       icon: Icons.star_rate_rounded,
                       iconColor: const Color(0xFFFFD54F),
-                      title: "Bizi Değerlendir",
+                      title: "rate_us".tr(),
                       onTap: () {
                         provider.playButtonClickSound();
-                        // TODO: Uygulama mağazaya yüklenince buraya Store linki eklenecek
+                        // TODO: Mağaza linki
                       },
                     ),
                     Divider(
@@ -171,7 +220,7 @@ class SettingsPage extends StatelessWidget {
                       theme: theme,
                       icon: Icons.privacy_tip_rounded,
                       iconColor: const Color(0xFF66BB6A),
-                      title: "Gizlilik Politikası",
+                      title: "privacy_policy".tr(),
                       onTap: () {
                         provider.playButtonClickSound();
                         _launchPrivacyPolicy();
@@ -193,9 +242,7 @@ class SettingsPage extends StatelessWidget {
                         width: 60,
                         errorBuilder: (_, __, ___) => Icon(
                           Icons.gamepad_rounded,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.2,
-                          ),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -221,6 +268,54 @@ class SettingsPage extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageTile({
+    required BuildContext context,
+    required ThemeData theme,
+    required String title,
+    required Locale locale,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () {
+        context.read<GameProvider>().playButtonClickSound();
+        context.setLocale(locale);
+      },
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (isSelected ? theme.colorScheme.primary : Colors.grey).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.language_rounded, 
+                color: isSelected ? theme.colorScheme.primary : Colors.grey, 
+                size: 24
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary, size: 24),
+          ],
         ),
       ),
     );
